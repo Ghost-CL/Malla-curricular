@@ -177,7 +177,29 @@
   .ramo.aprobado::after {
     content: "✔"; position: absolute; top: -10px; right: -10px; background: #10b981; color: #fff; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px;
   }
+<script type="module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-analytics.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
 
+  // Your web app's Firebase configuration
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+  const firebaseConfig = {
+    apiKey: "AIzaSyA37Zx1zY-PV5hf9nTgVnwQgJ3yTJOt848",
+    authDomain: "malla-curricular-interactiva.firebaseapp.com",
+    projectId: "malla-curricular-interactiva",
+    storageBucket: "malla-curricular-interactiva.firebasestorage.app",
+    messagingSenderId: "767995130164",
+    appId: "1:767995130164:web:67826da47f476339fff561",
+    measurementId: "G-Q53SWBKG52"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+</script>
   /* Bloqueado (Candado) */
   .ramo.bloqueado {
     background: var(--locked-bg) !important;
