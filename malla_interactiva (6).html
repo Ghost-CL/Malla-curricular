@@ -233,7 +233,7 @@
     // storageBucket: "TU_PROYECTO.appspot.com",
     // messagingSenderId: "...",
     // appId: "..."
-  };
+    };
   // ---------------------------
 
   let auth, db, user = null;
@@ -619,8 +619,7 @@ function drawLine(n1, n2, color, isHighlight=false) {
   const dist = p2.x - p1.x;
   const c1 = { x: p1.x + dist/2, y: p1.y };
   const c2 = { x: p2.x - dist/2, y: p2.y };
-  
-  const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+const path = document.createElementNS('http://www.w3.org/2000/svg','path');
   const d = `M ${p1.x} ${p1.y} C ${c1.x} ${c1.y} ${c2.x} ${c2.y} ${p2.x} ${p2.y}`;
   
   path.setAttribute('d', d);
