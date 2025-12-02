@@ -3,25 +3,158 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Malla Interactiva PEM Matemática — Posiciones Fijas (Aprobado Gris)</title>
+<title>Malla Interactiva PEM Matemática — Pro</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
 <style>
-  :root{ --bg:#f5f7fb; --shadow:0 6px 18px rgba(0,0,0,0.08); }
-  *{box-sizing:border-box}
-  body{font-family:Arial, Helvetica, sans-serif; margin:0; background:var(--bg); color:#222}
-  header{display:flex;align-items:center;justify-content:space-between;padding:18px 24px;background:linear-gradient(90deg,#ffffffcc,#f0f6ffcc);box-shadow:var(--shadow)}
-  header h1{margin:0;font-size:16px}
-  .controls{display:flex;gap:10px;align-items:center}
-  .btn{padding:8px 12px;border-radius:8px;border:1px solid #e1e7ef;background:#fff;cursor:pointer}
-  #creditosTotales{font-weight:700;padding:8px 12px;border-radius:10px;background:#fff;border:1px solid #e1e7ef}
+  :root {
+    --bg: #f8fafc;
+    --text: #1e293b;
+    --card-bg: #ffffff;
+    --border: #e2e8f0;
+    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    --line-color: #94a3b8;
+    --line-active: #3b82f6;
+    --line-width: 2px;
+    
+    /* Colores de estado */
+    --locked-bg: #e2e8f0;
+    --locked-text: #94a3b8;
+    --approved-filter: grayscale(80%) opacity(0.7);
+  }
 
-  .canvas-wrap{max-width:1400px;margin:22px auto;position:relative;padding:18px;background:linear-gradient(180deg,#fff,#fbfdff);border-radius:14px;box-shadow:var(--shadow);overflow:hidden}
-  #svgLayer{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none}
-  .grid-area{display:grid;grid-template-columns:repeat(6,1fr);grid-auto-rows:140px;gap:18px;padding:18px}
+  /* Modo Oscuro */
+  body.dark-mode {
+    --bg: #0f172a;
+    --text: #f1f5f9;
+    --card-bg: #1e293b;
+    --border: #334155;
+    --line-color: #475569;
+    --locked-bg: #1e293b;
+    --locked-text: #475569;
+    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+  }
 
-  .ramo{position:relative;padding:12px;border-radius:12px;color:#fff;cursor:pointer;box-shadow:0 8px 20px rgba(12,26,50,0.08);user-select:none;display:flex;flex-direction:column;justify-content:space-between;transition:all .25s ease}
-  .titulo{font-weight:700;margin-bottom:6px}
-  .meta{font-size:13px;opacity:0.95}
+  body { font-family: 'Segoe UI', system-ui, sans-serif; margin: 0; background: var(--bg); color: var(--text); transition: background 0.3s, color 0.3s; }
+  
+  /* Header y Controles */
+  header { 
+    background: var(--card-bg); 
+    padding: 1rem 2rem; 
+    border-bottom: 1px solid var(--border); 
+    display: flex; 
+    flex-wrap: wrap; 
+    gap: 1rem; 
+    align-items: center; 
+    justify-content: space-between;
+    box-shadow: var(--shadow);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
 
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.2rem; }
+  
+  .controls-group { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  
+  .btn {
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--card-bg);
+    color: var(--text);
+    cursor: pointer;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+  }
+  .btn:hover { background: var(--border); }
+  .btn-primary { background: #3b82f6; color: white; border: none; }
+  .btn-primary:hover { background: #2563eb; }
+
+  input[type="text"] {
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    width: 200px;
+  }
+
+  /* Dashboard */
+  .dashboard {
+    max-width: 1400px;
+    margin: 20px auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    padding: 0 20px;
+  }
+  .stat-card {
+    background: var(--card-bg);
+    padding: 15px;
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .stat-val { font-size: 1.5rem; font-weight: bold; }
+  .stat-label { font-size: 0.85rem; opacity: 0.8; }
+  .progress-bar { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; margin-top: 5px; }
+  .progress-fill { height: 100%; background: #10b981; width: 0%; transition: width 0.5s ease; }
+
+  /* Canvas y Grid */
+  .canvas-wrap {
+    max-width: 1400px;
+    margin: 20px auto;
+    position: relative;
+    background: var(--card-bg);
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+    overflow: auto; /* Scroll si es muy grande */
+    padding: 40px;
+    min-height: 800px;
+  }
+  
+  #svgLayer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
+
+  .grid-area {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(6, 180px); /* Ancho fijo para estabilidad */
+    grid-auto-rows: 120px;
+    gap: 40px 30px; /* Espaciado vertical y horizontal */
+    z-index: 2;
+    justify-content: center;
+  }
+
+  /* Estilos de Ramo */
+  .ramo {
+    position: relative;
+    padding: 12px;
+    border-radius: 10px;
+    color: #fff;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+    font-size: 0.85rem;
+    z-index: 10;
+  }
+  
+  .ramo:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.15); z-index: 20; }
+  .titulo { font-weight: 700; line-height: 1.3; margin-bottom: 4px; }
+  .meta { font-size: 0.75rem; opacity: 0.9; display: flex; justify-content: space-between; }
+  .status-icon { font-size: 1rem; }
+
+  /* Colores de semestre (mismos que antes, ajustados) */
   .s1{background:linear-gradient(135deg,#6ee7b7,#10b981)}
   .s2{background:linear-gradient(135deg,#fbbf24,#fb923c)}
   .s3{background:linear-gradient(135deg,#a78bfa,#7c3aed)}
@@ -32,49 +165,225 @@
   .s8{background:linear-gradient(135deg,#22d3ee,#0ea5e9)}
   .s9{background:linear-gradient(135deg,#6b7280,#374151)}
 
-  /* Nuevo estilo para ramos aprobados: más gris, menos saturación y contraste visual */
-  .aprobado{
-    filter:grayscale(85%) brightness(0.9) opacity(0.75);
-    box-shadow:none;
-    transform:scale(0.995);
-    border:1px solid rgba(0,0,0,0.06);
+  /* ESTADOS LÓGICOS */
+  
+  /* Aprobado */
+  .ramo.aprobado {
+    background: var(--card-bg) !important;
+    color: var(--text);
+    border: 2px solid #10b981;
+    opacity: 0.8;
+  }
+  .ramo.aprobado::after {
+    content: "✔"; position: absolute; top: -10px; right: -10px; background: #10b981; color: #fff; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px;
   }
 
-  .bloqueado{filter:grayscale(40%) opacity(0.75);border:2px dashed rgba(0,0,0,0.06);cursor:not-allowed}
+  /* Bloqueado (Candado) */
+  .ramo.bloqueado {
+    background: var(--locked-bg) !important;
+    color: var(--locked-text) !important;
+    cursor: not-allowed;
+    box-shadow: none;
+    border: 2px dashed var(--border);
+  }
+  .ramo.bloqueado .titulo { opacity: 0.7; }
+  .ramo.bloqueado:hover { transform: none; }
 
-  .modal-back{position:fixed;inset:0;background:rgba(0,0,0,0.45);display:none;align-items:center;justify-content:center}
-  .modal{background:#fff;padding:18px;border-radius:12px;max-width:520px;width:92%;box-shadow:var(--shadow)}
-  .row{display:flex;gap:8px;align-items:center}
+  /* Efecto Dim (cuando se busca o se hace hover en otro) */
+  .ramo.dimmed { opacity: 0.15; filter: grayscale(100%); }
 
-  @media (max-width:1024px){ .ramo{min-height:70px} }
-  @media (max-width:720px){ .grid-area{grid-template-columns:repeat(2,1fr);grid-auto-rows:120px} }
-  footer{max-width:1400px;margin:12px auto;text-align:center;color:#666;padding-bottom:30px}
+  /* Modal */
+  .modal-back { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 100; backdrop-filter: blur(2px); }
+  .modal { background: var(--card-bg); padding: 24px; border-radius: 16px; width: 90%; max-width: 500px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); border: 1px solid var(--border); }
+  .modal h3 { margin-top: 0; font-size: 1.5rem; }
+
+  /* Footer */
+  footer { text-align: center; padding: 40px; color: #64748b; font-size: 0.9rem; }
+
+  /* Responsive Mobile */
+  @media (max-width: 768px) {
+    .grid-area { grid-template-columns: repeat(2, 1fr); gap: 15px; }
+    .ramo { font-size: 0.8rem; min-height: 80px; }
+    .controls-group span { display: none; } /* Ocultar textos de botones */
+    header { padding: 10px; }
+    .dashboard { grid-template-columns: 1fr; }
+  }
 </style>
+
+<script type="module">
+  // ------------------------------------------------------------------
+  // CONFIGURACIÓN DE FIREBASE
+  // ------------------------------------------------------------------
+  // Para activar el login real, crea un proyecto en console.firebase.google.com
+  // 1. Crea una Web App.
+  // 2. Copia el 'firebaseConfig'.
+  // 3. Pégalo abajo reemplazando el objeto actual.
+  // 4. Activa "Authentication > Google".
+  // 5. Activa "Firestore Database".
+  
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+  import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+  import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+
+  // --- PEGA TU CONFIG AQUÍ ---
+  const firebaseConfig = {
+    // apiKey: "TU_API_KEY",
+    // authDomain: "TU_PROYECTO.firebaseapp.com",
+    // projectId: "TU_PROYECTO_ID",
+    // storageBucket: "TU_PROYECTO.appspot.com",
+    // messagingSenderId: "...",
+    // appId: "..."
+  };
+  // ---------------------------
+
+  let auth, db, user = null;
+  const isFirebaseConfigured = firebaseConfig.apiKey !== undefined;
+
+  if (isFirebaseConfigured) {
+    const app = initializeApp(firebaseConfig);
+    auth = getAuth(app);
+    db = getFirestore(app);
+  }
+
+  // Lógica Global de Autenticación exportada al objeto window para usarla en botones
+  window.doLogin = async () => {
+    if (!isFirebaseConfigured) {
+      alert("Para usar Google Login, debes configurar Firebase en el código fuente (línea 180). Mientras tanto, se usa el modo local.");
+      return;
+    }
+    const provider = new GoogleAuthProvider();
+    try {
+      await signInWithPopup(auth, provider);
+    } catch (e) { console.error(e); alert("Error login: " + e.message); }
+  };
+
+  window.doLogout = async () => {
+    if (auth) await signOut(auth);
+    location.reload();
+  };
+
+  // Observador de estado
+  if (isFirebaseConfigured) {
+    onAuthStateChanged(auth, async (u) => {
+      user = u;
+      const btn = document.getElementById('authBtn');
+      if (user) {
+        btn.innerHTML = `<i class="fab fa-google"></i> ${user.displayName} (Salir)`;
+        btn.onclick = window.doLogout;
+        await cargarDesdeNube();
+      } else {
+        btn.innerHTML = `<i class="fab fa-google"></i> Acceder con Google`;
+        btn.onclick = window.doLogin;
+      }
+    });
+  }
+
+  // Funciones de Guardado/Carga Híbridas (Nube + Local)
+  window.guardarDatos = async (aprobados) => {
+    // 1. Siempre guardar en local
+    localStorage.setItem('pem_malla_aprobados_v2', JSON.stringify(aprobados));
+    
+    // 2. Si hay usuario, guardar en Firestore
+    if (user && db) {
+      try {
+        await setDoc(doc(db, "avances", user.uid), { aprobados: aprobados, fecha: new Date() });
+      } catch (e) { console.error("Error guardando en nube", e); }
+    }
+  };
+
+  async function cargarDesdeNube() {
+    if (!user || !db) return;
+    try {
+      const docSnap = await getDoc(doc(db, "avances", user.uid));
+      if (docSnap.exists()) {
+        const cloudData = docSnap.data().aprobados;
+        // Combinar o sobrescribir? Por ahora sobrescribimos lo local con la nube
+        localStorage.setItem('pem_malla_aprobados_v2', JSON.stringify(cloudData));
+        location.reload(); // Recargar para aplicar cambios
+      }
+    } catch (e) { console.error("Error cargando nube", e); }
+  }
+</script>
 </head>
+
 <body>
+
 <header>
-  <h1>PEM Matemática — Malla Interactiva (Aprobado gris)</h1>
-  <div class="controls">
-    <div id="creditosTotales">Créditos: 0</div>
-    <button class="btn" id="resetBtn">Restablecer</button>
-    <button class="btn" id="exportBtn">Exportar</button>
-    <button class="btn" id="importBtn">Importar</button>
+  <div class="brand">
+    <i class="fas fa-graduation-cap"></i> PEM Matemática
+  </div>
+  
+  <div class="controls-group">
+    <input type="text" id="searchInput" placeholder="Buscar ramo..." />
+    
+    <button class="btn" id="darkModeBtn" title="Modo Oscuro">
+      <i class="fas fa-moon"></i>
+    </button>
+    
+    <button class="btn" id="exportBtn" title="Descargar Imagen">
+      <i class="fas fa-camera"></i> <span>Imagen</span>
+    </button>
+    
+    <button class="btn" id="resetBtn" title="Reiniciar">
+      <i class="fas fa-trash-alt"></i>
+    </button>
+
+    <button class="btn btn-primary" id="authBtn" onclick="window.doLogin()">
+      <i class="fab fa-google"></i> <span>Login</span>
+    </button>
   </div>
 </header>
 
-<main>
-  <div class="canvas-wrap" id="canvasWrap">
-    <svg id="svgLayer" xmlns="http://www.w3.org/2000/svg"></svg>
-    <div class="grid-area" id="gridArea" aria-hidden="false"></div>
+<div class="dashboard">
+  <div class="stat-card">
+    <div class="stat-label">Progreso de Carrera</div>
+    <div class="stat-val" id="statPorcentaje">0%</div>
+    <div class="progress-bar"><div class="progress-fill" id="barPorcentaje"></div></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Créditos Aprobados</div>
+    <div class="stat-val" id="statCreditos">0 / 0</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Ramos Aprobados</div>
+    <div class="stat-val" id="statRamos">0 / 0</div>
+  </div>
+</div>
 
-    <template id="ramoTemplate">
-      <div class="ramo">
-        <div class="titulo"></div>
-        <div class="meta"></div>
-      </div>
-    </template>
+<div class="canvas-wrap" id="canvasWrap">
+  <svg id="svgLayer" xmlns="http://www.w3.org/2000/svg"></svg>
+  <div class="grid-area" id="gridArea"></div>
+</div>
 
-    <script id="dataRamos" type="application/json">
+<footer>
+  Sistema de Malla Interactiva v2.0 <br>
+  Login con Google requiere configuración de Firebase.
+</footer>
+
+<template id="ramoTemplate">
+  <div class="ramo">
+    <div style="position:absolute; top:8px; right:8px;"><i class="fas fa-lock lock-icon" style="display:none"></i></div>
+    <div class="titulo"></div>
+    <div class="meta">
+      <span class="creditos"></span>
+      <span class="sigla">SEM <span class="semestre-num"></span></span>
+    </div>
+  </div>
+</template>
+
+<div class="modal-back" id="modalBack">
+  <div class="modal">
+    <h3 id="modalTitle">Nombre del Ramo</h3>
+    <p id="modalDesc">Descripción...</p>
+    <hr style="border:0; border-top:1px solid var(--border); margin:15px 0;">
+    <div class="controls-group" style="justify-content: flex-end;">
+      <button class="btn" id="modalCloseBtn">Cancelar</button>
+      <button class="btn btn-primary" id="modalActionBtn">Aprobar Ramo</button>
+    </div>
+  </div>
+</div>
+
+<script id="dataRamos" type="application/json">
 [
   {"nombre":"COMUNICACIÓN EN ESPAÑOL","prer":"","creditos":4,"desc":"Desarrollo de habilidades comunicativas académicas.","row":1,"col":1,"cls":"s1"},
   {"nombre":"EDUCACIÓN Y SOCIEDAD","prer":"","creditos":4,"desc":"Vínculos entre sistemas educativos y sociedad.","row":1,"col":2,"cls":"s1"},
@@ -82,163 +391,381 @@
   {"nombre":"ARITMÉTICA","prer":"","creditos":6,"desc":"Estructuras y razonamiento aritmético.","row":1,"col":4,"cls":"s1"},
   {"nombre":"INTRODUCCIÓN AL ÁLGEBRA","prer":"","creditos":8,"desc":"Conceptos básicos de álgebra y demostración.","row":1,"col":5,"cls":"s1"},
   {"nombre":"FUNDAMENTOS FILOSÓFICOS","prer":"","creditos":4,"desc":"Bases filosóficas de la educación.","row":1,"col":6,"cls":"s1"},
-
-  
-
   {"nombre":"APRENDIZAJE Y DESARROLLO HUMANO","prer":"EDUCACIÓN Y SOCIEDAD","creditos":4,"desc":"Procesos del desarrollo y aprendizaje humano.","row":2,"col":2,"cls":"s2"},
   {"nombre":"PERSPECTIVAS CURRICULARES EN EDUCACIÓN","prer":"EDUCACIÓN Y SOCIEDAD","creditos":4,"desc":"Teorías y diseño del currículum.","row":2,"col":3,"cls":"s2"},
   {"nombre":"INTRODUCCIÓN AL ANÁLISIS","prer":"ARITMÉTICA,INTRODUCCIÓN AL ÁLGEBRA","creditos":8,"desc":"Fundamentos de análisis matemático.","row":2,"col":4,"cls":"s2"},
   {"nombre":"GEOMETRÍA PLANA","prer":"ARITMÉTICA","creditos":6,"desc":"Elementos de geometría euclidiana.","row":2,"col":5,"cls":"s2"},
   {"nombre":"FUNDAMENTOS TEOLÓGICOS","prer":"FUNDAMENTOS FILOSÓFICOS","creditos":4,"desc":"Dimensión teológica en educación.","row":2,"col":6,"cls":"s2"},
-
   {"nombre":"FUNDAMENTOS DE LA INVESTIGACIÓN EDUCATIVA","prer":"APRENDIZAJE Y DESARROLLO HUMANO","creditos":4,"desc":"Principios y métodos de investigación educativa.","row":3,"col":1,"cls":"s3"},
   {"nombre":"EVALUACIÓN PARA EL APRENDIZAJE","prer":"PERSPECTIVAS CURRICULARES EN EDUCACIÓN","creditos":4,"desc":"Evaluación formativa y para el aprendizaje.","row":3,"col":2,"cls":"s3"},
   {"nombre":"DIDÁCTICA DE LA ARITMÉTICA","prer":"ARITMÉTICA,PERSPECTIVAS CURRICULARES EN EDUCACIÓN","creditos":6,"desc":"Estrategias para enseñar aritmética.","row":3,"col":3,"cls":"s3"},
   {"nombre":"GEOMETRÍA DEL ESPACIO","prer":"GEOMETRÍA PLANA","creditos":7,"desc":"Geometría tridimensional y transformaciones.","row":3,"col":4,"cls":"s3"},
   {"nombre":"ELEMENTOS DE ANÁLISIS REAL I","prer":"INTRODUCCIÓN AL ANÁLISIS","creditos":7,"desc":"Sucesiones, continuidad y derivación en R.","row":3,"col":5,"cls":"s3"},
-
   {"nombre":"INCLUSIÓN EN CONTEXTOS EDUCATIVOS","prer":"APRENDIZAJE Y DESARROLLO HUMANO","creditos":4,"desc":"Educación inclusiva y atención a la diversidad.","row":4,"col":1,"cls":"s4"},
   {"nombre":"PRÁCTICA PEDAGÓGICA I","prer":"FUNDAMENTOS DE LA INVESTIGACIÓN EDUCATIVA,EVALUACIÓN PARA EL APRENDIZAJE","creditos":4,"desc":"Experiencia inicial en aula.","row":4,"col":2,"cls":"s4"},
   {"nombre":"DIDÁCTICA DE LA GEOMETRÍA","prer":"GEOMETRÍA DEL ESPACIO,DIDÁCTICA DE LA ARITMÉTICA","creditos":6,"desc":"Metodologías para la enseñanza de la geometría.","row":4,"col":3,"cls":"s4"},
   {"nombre":"ÁLGEBRA LINEAL Y MATRICES","prer":"INTRODUCCIÓN AL ÁLGEBRA","creditos":7,"desc":"Espacios vectoriales, transformaciones y matrices.","row":4,"col":4,"cls":"s4"},
   {"nombre":"ELEMENTOS DE ANÁLISIS REAL II","prer":"ELEMENTOS DE ANÁLISIS REAL I","creditos":7,"desc":"Integración y series en R.","row":4,"col":5,"cls":"s4"},
-
   {"nombre":"PLANIFICACIÓN DEL CURRÍCULUM Y EVALUACIÓN DE LOS APRENDIZAJES","prer":"PERSPECTIVAS CURRICULARES EN EDUCACIÓN,EVALUACIÓN PARA EL APRENDIZAJE","creditos":4,"desc":"Planificación curricular y evaluación educativa.","row":5,"col":1,"cls":"s5"},
   {"nombre":"PRÁCTICA PEDAGÓGICA II","prer":"PRÁCTICA PEDAGÓGICA I","creditos":4,"desc":"Profundización de práctica en aula.","row":5,"col":2,"cls":"s5"},
   {"nombre":"AZAR Y PROBABILIDADES","prer":"ELEMENTOS DE ANÁLISIS REAL I","creditos":7,"desc":"Modelos aleatorios y probabilidad básica.","row":5,"col":3,"cls":"s5"},
   {"nombre":"ANÁLISIS CONTINUO EN DOS Y TRES DIMENSIONES","prer":"ELEMENTOS DE ANÁLISIS REAL II","creditos":8,"desc":"Cálculo multivariable.","row":5,"col":4,"cls":"s5"},
   {"nombre":"ECUACIONES DIFERENCIALES ORDINARIAS","prer":"ELEMENTOS DE ANÁLISIS REAL II","creditos":7,"desc":"Modelación con EDO y métodos de solución.","row":5,"col":5,"cls":"s5"},
-
   {"nombre":"POLÍTICA Y GESTIÓN EDUCATIVA","prer":"INCLUSIÓN EN CONTEXTOS EDUCATIVOS","creditos":4,"desc":"Gestión educativa y políticas públicas.","row":6,"col":1,"cls":"s6"},
   {"nombre":"PRÁCTICA PEDAGÓGICA III","prer":"PRÁCTICA PEDAGÓGICA II","creditos":6,"desc":"Práctica intermedia con mayor autonomía.","row":6,"col":2,"cls":"s6"},
   {"nombre":"DIDÁCTICA DEL CÁLCULO","prer":"ANÁLISIS CONTINUO EN DOS Y TRES DIMENSIONES,ECUACIONES DIFERENCIALES ORDINARIAS,DIDÁCTICA DE LA ARITMÉTICA","creditos":6,"desc":"Estrategias para enseñar cálculo.","row":6,"col":3,"cls":"s6"},
   {"nombre":"PROBABILIDADES Y ESTADÍSTICA INFERENCIAL","prer":"AZAR Y PROBABILIDADES","creditos":7,"desc":"Inferencia estadística y estimación.","row":6,"col":4,"cls":"s6"},
   {"nombre":"ESTRUCTURAS ALGEBRAICAS","prer":"ÁLGEBRA LINEAL Y MATRICES","creditos":7,"desc":"Anillos, grupos y homomorfismos básicos.","row":6,"col":5,"cls":"s6"},
-
   {"nombre":"DISEÑO DE LA INVESTIGACIÓN EDUCATIVA","prer":"FUNDAMENTOS DE LA INVESTIGACIÓN EDUCATIVA,EVALUACIÓN PARA EL APRENDIZAJE","creditos":4,"desc":"Diseños y protocolos de investigación en aula.","row":7,"col":1,"cls":"s7"},
   {"nombre":"PRÁCTICA PEDAGÓGICA IV","prer":"PRÁCTICA PEDAGÓGICA III","creditos":6,"desc":"Práctica avanzada con responsabilidad docente.","row":7,"col":2,"cls":"s7"},
   {"nombre":"DIDÁCTICA DE LA PROBABILIDAD Y DE LA ESTADÍSTICA","prer":"PROBABILIDADES Y ESTADÍSTICA INFERENCIAL,DIDÁCTICA DE LA ARITMÉTICA","creditos":6,"desc":"Didáctica de contenidos estocásticos.","row":7,"col":3,"cls":"s7"},
   {"nombre":"DIDÁCTICA DEL ÁLGEBRA","prer":"ESTRUCTURAS ALGEBRAICAS,DIDÁCTICA DE LA ARITMÉTICA","creditos":6,"desc":"Enseñanza del álgebra escolar y avanzada.","row":7,"col":4,"cls":"s7"},
   {"nombre":"ÉTICA PROFESIONAL","prer":"FUNDAMENTOS FILOSÓFICOS,FUNDAMENTOS TEOLÓGICOS","creditos":4,"desc":"Ética docente y responsabilidad profesional.","row":7,"col":5,"cls":"s7"},
-
   {"nombre":"INVESTIGACIÓN EN LA PRÁCTICA EDUCATIVA","prer":"DISEÑO DE LA INVESTIGACIÓN EDUCATIVA,PRÁCTICA PEDAGÓGICA IV","creditos":4,"desc":"Indagación basada en la propia práctica.","row":8,"col":1,"cls":"s8"},
   {"nombre":"PRÁCTICA PEDAGÓGICA V","prer":"PRÁCTICA PEDAGÓGICA IV","creditos":8,"desc":"Práctica con alto nivel de autonomía.","row":8,"col":2,"cls":"s8"},
   {"nombre":"HISTORIA DE LA MATEMÁTICA","prer":"ESTRUCTURAS ALGEBRAICAS","creditos":6,"desc":"Desarrollo histórico de ideas matemáticas.","row":8,"col":3,"cls":"s8"},
-
   {"nombre":"PRÁCTICA PROFESIONAL","prer":"PRÁCTICA PEDAGÓGICA V,ÉTICA PROFESIONAL,INVESTIGACIÓN EN LA PRÁCTICA EDUCATIVA","creditos":30,"desc":"Internado profesional con dedicación completa.","row":9,"col":2,"cls":"s9"}
 ]
-    </script>
-
-  </div>
-</main>
-
-<div class="modal-back" id="modalBack">
-  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-    <h3 id="modalTitle">Ramo</h3>
-    <p id="modalCred"></p>
-    <p id="modalDesc"></p>
-    <div class="row" style="justify-content:flex-end;margin-top:12px">
-      <button class="btn" id="toggleAprBtn">Marcar/Desmarcar aprobado</button>
-      <button class="btn" id="closeModal">Cerrar</button>
-    </div>
-  </div>
-</div>
-
-<footer>
-  Las posiciones ahora son fijas en la cuadrícula. Haz clic en cualquier ramo para abrir la ventana y aprobarlo. Si quieres que vuelva la funcionalidad de arrastrar, lo habilito.
-</footer>
+</script>
 
 <script>
-const canvasWrap = document.getElementById('canvasWrap');
-const svg = document.getElementById('svgLayer');
+/* --------------------------------------------------------
+   LÓGICA PRINCIPAL DEL CLIENTE
+   -------------------------------------------------------- */
 const gridArea = document.getElementById('gridArea');
-const creditosTotales = document.getElementById('creditosTotales');
-const modalBack = document.getElementById('modalBack');
-const modalTitle = document.getElementById('modalTitle');
-const modalCred = document.getElementById('modalCred');
-const modalDesc = document.getElementById('modalDesc');
-const toggleAprBtn = document.getElementById('toggleAprBtn');
+const svg = document.getElementById('svgLayer');
+const searchInput = document.getElementById('searchInput');
+let allRamosData = [];
 let activeRamo = null;
 
-const LS_KEY_APPROVED = 'pem_malla_aprobados_v1';
+// Configuración LocalStorage
+const LS_KEY = 'pem_malla_aprobados_v2';
 
-function crearRamosDesdeJSON(){
-  const data = JSON.parse(document.getElementById('dataRamos').textContent);
+function init() {
+  allRamosData = JSON.parse(document.getElementById('dataRamos').textContent);
+  renderGrid();
+  loadProgress();
+  
+  // Event Listeners
+  window.addEventListener('resize', drawLines);
+  searchInput.addEventListener('input', handleSearch);
+  
+  // Dark Mode Toggle
+  document.getElementById('darkModeBtn').addEventListener('click', () => {
+    document.body.classList.toggle('dark-mode');
+    drawLines(); // Redibujar líneas por si cambian colores
+  });
+
+  // Reset
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    if(confirm('¿Borrar todo el progreso?')) {
+      localStorage.removeItem(LS_KEY);
+      // Si hubiera Firebase, aquí también borraríamos en la nube
+      location.reload();
+    }
+  });
+
+  // Exportar Imagen
+  document.getElementById('exportBtn').addEventListener('click', () => {
+    const el = document.getElementById('canvasWrap');
+    html2canvas(el).then(canvas => {
+      const link = document.createElement('a');
+      link.download = 'mi_malla.png';
+      link.href = canvas.toDataURL();
+      link.click();
+    });
+  });
+
+  // Modal
+  document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
+  document.getElementById('modalBack').addEventListener('click', (e) => {
+    if(e.target === document.getElementById('modalBack')) closeModal();
+  });
+  document.getElementById('modalActionBtn').addEventListener('click', toggleStatus);
+}
+
+function renderGrid() {
   const template = document.getElementById('ramoTemplate');
-  data.forEach(item=>{
-    const node = template.content.firstElementChild.cloneNode(true);
-    node.classList.add(item.cls);
+  gridArea.innerHTML = ''; // Limpiar
+  
+  allRamosData.forEach(item => {
+    const clone = template.content.cloneNode(true);
+    const node = clone.querySelector('.ramo');
+    
+    // Asignar datos
     node.dataset.nombre = item.nombre;
-    node.dataset.prerrequisitos = item.prer;
+    node.dataset.prer = item.prer;
     node.dataset.creditos = item.creditos;
     node.dataset.desc = item.desc;
+    node.classList.add(item.cls);
+    
+    // Posición Grid
     node.style.gridColumnStart = item.col;
     node.style.gridRowStart = item.row;
+    
+    // Contenido
     node.querySelector('.titulo').innerText = item.nombre;
-    node.querySelector('.meta').innerText = item.creditos + ' cr';
-    node.addEventListener('click', ()=>abrirModal(node));
+    node.querySelector('.creditos').innerText = item.creditos + ' cr';
+    node.querySelector('.semestre-num').innerText = item.cls.replace('s',''); // Extraer numero semestre
+    
+    // Eventos
+    node.addEventListener('click', () => openModal(node));
+    node.addEventListener('mouseenter', () => highlightPath(node, true));
+    node.addEventListener('mouseleave', () => highlightPath(node, false));
+    
     gridArea.appendChild(node);
   });
 }
 
-function drawAllLines(){
-  while(svg.firstChild) svg.removeChild(svg.firstChild);
+function getAprobados() {
+  return JSON.parse(localStorage.getItem(LS_KEY) || '[]');
+}
+
+function loadProgress() {
+  const aprobados = getAprobados();
+  const ramosNodes = Array.from(document.querySelectorAll('.ramo'));
+  
+  ramosNodes.forEach(node => {
+    const nombre = node.dataset.nombre;
+    const prerequisitos = (node.dataset.prer || '').split(',').map(s=>s.trim()).filter(Boolean);
+    
+    // Reset classes
+    node.classList.remove('aprobado', 'bloqueado');
+    node.querySelector('.lock-icon').style.display = 'none';
+
+    // 1. Está aprobado?
+    if (aprobados.includes(nombre)) {
+      node.classList.add('aprobado');
+    } else {
+      // 2. Si no, verificar si está bloqueado (prerrequisitos no cumplidos)
+      const allPrereqMet = prerequisitos.every(p => aprobados.includes(p));
+      if (!allPrereqMet) {
+        node.classList.add('bloqueado');
+        node.querySelector('.lock-icon').style.display = 'block';
+        node.title = "Bloqueado: faltan " + prerequisitos.filter(p => !aprobados.includes(p)).join(', ');
+      }
+    }
+  });
+
+  updateStats(aprobados);
+  drawLines();
+}
+
+function updateStats(aprobados) {
+  let totalCreditos = 0;
+  let misCreditos = 0;
+  let totalRamos = allRamosData.length;
+  let misRamos = aprobados.length;
+  
+  allRamosData.forEach(r => {
+    totalCreditos += r.creditos;
+    if (aprobados.includes(r.nombre)) misCreditos += r.creditos;
+  });
+  
+  const porcentaje = Math.round((misCreditos / totalCreditos) * 100) || 0;
+  
+  document.getElementById('statPorcentaje').innerText = porcentaje + '%';
+  document.getElementById('barPorcentaje').style.width = porcentaje + '%';
+  document.getElementById('statCreditos').innerText = `${misCreditos} / ${totalCreditos}`;
+  document.getElementById('statRamos').innerText = `${misRamos} / ${totalRamos}`;
+}
+
+// -----------------------------------------------------
+// Lógica Gráfica (SVG Lines)
+// -----------------------------------------------------
+function drawLines() {
+  svg.innerHTML = ''; // Limpiar
+  const nodes = Array.from(document.querySelectorAll('.ramo'));
+  const isDark = document.body.classList.contains('dark-mode');
+  const baseColor = isDark ? '#475569' : '#cbd5e1'; // Gris claro por defecto
+
+  // Definir marcador de flecha
   const defs = document.createElementNS('http://www.w3.org/2000/svg','defs');
   const marker = document.createElementNS('http://www.w3.org/2000/svg','marker');
-  marker.setAttribute('id','arrow'); marker.setAttribute('markerWidth','10'); marker.setAttribute('markerHeight','10'); marker.setAttribute('refX','10'); marker.setAttribute('refY','5'); marker.setAttribute('orient','auto');
-  const path = document.createElementNS('http://www.w3.org/2000/svg','path'); path.setAttribute('d','M0,0 L10,5 L0,10 z'); path.setAttribute('fill','#2b6cb0'); marker.appendChild(path); defs.appendChild(marker); svg.appendChild(defs);
+  marker.setAttribute('id','arrow');
+  marker.setAttribute('markerWidth','6');
+  marker.setAttribute('markerHeight','6');
+  marker.setAttribute('refX','6');
+  marker.setAttribute('refY','3');
+  marker.setAttribute('orient','auto');
+  const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+  path.setAttribute('d','M0,0 L6,3 L0,6 z');
+  path.setAttribute('fill', baseColor);
+  marker.appendChild(path);
+  defs.appendChild(marker);
+  svg.appendChild(defs);
 
-  const nodes = Array.from(gridArea.querySelectorAll('.ramo'));
-  nodes.forEach(dest=>{
-    const prereq = (dest.dataset.prerrequisitos||'').split(',').map(s=>s.trim()).filter(Boolean);
-    prereq.forEach(name=>{
-      const src = nodes.find(n=>n.dataset.nombre === name);
-      if(!src) return;
-      const p1 = getCenter(src); const p2 = getCenter(dest);
-      const dx = p2.x - p1.x; const curvature = Math.min(150, Math.abs(dx)/1.5 + 30);
-      const cx1 = p1.x + curvature * Math.sign(dx || 1); const cx2 = p2.x - curvature * Math.sign(dx || 1);
-      const pathEl = document.createElementNS('http://www.w3.org/2000/svg','path');
-      const d = `M ${p1.x} ${p1.y} C ${cx1} ${p1.y} ${cx2} ${p2.y} ${p2.x} ${p2.y}`;
-      pathEl.setAttribute('d',d); pathEl.setAttribute('stroke','#2b6cb0'); pathEl.setAttribute('stroke-width','2'); pathEl.setAttribute('fill','none'); pathEl.setAttribute('marker-end','url(#arrow)'); svg.appendChild(pathEl);
+  nodes.forEach(dest => {
+    const prereq = (dest.dataset.prer || '').split(',').map(s=>s.trim()).filter(Boolean);
+    prereq.forEach(originName => {
+      const origin = nodes.find(n => n.dataset.nombre === originName);
+      if(origin) {
+        drawLine(origin, dest, baseColor);
+      }
     });
   });
 }
 
-function getCenter(el){ const rect = el.getBoundingClientRect(); const cRect = canvasWrap.getBoundingClientRect(); return {x: rect.left - cRect.left + rect.width/2, y: rect.top - cRect.top + rect.height/2}; }
+function drawLine(n1, n2, color, isHighlight=false) {
+  const r1 = n1.getBoundingClientRect();
+  const r2 = n2.getBoundingClientRect();
+  const cRect = document.getElementById('canvasWrap').getBoundingClientRect();
+  
+  // Calcular centros relativos al canvas
+  const p1 = { x: r1.left + r1.width/2 - cRect.left, y: r1.top + r1.height/2 - cRect.top };
+  const p2 = { x: r2.left + r2.width/2 - cRect.left, y: r2.top + r2.height/2 - cRect.top };
 
-function cargarAprobados(){ const aprobados = JSON.parse(localStorage.getItem(LS_KEY_APPROVED) || '[]'); const nodes = Array.from(gridArea.querySelectorAll('.ramo')); nodes.forEach(n=>{ if(aprobados.includes(n.dataset.nombre)) n.classList.add('aprobado'); }); }
+  // Curvas Bezier
+  const dist = p2.x - p1.x;
+  const c1 = { x: p1.x + dist/2, y: p1.y };
+  const c2 = { x: p2.x - dist/2, y: p2.y };
+  
+  const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+  const d = `M ${p1.x} ${p1.y} C ${c1.x} ${c1.y} ${c2.x} ${c2.y} ${p2.x} ${p2.y}`;
+  
+  path.setAttribute('d', d);
+  path.setAttribute('stroke', isHighlight ? '#3b82f6' : color);
+  path.setAttribute('stroke-width', isHighlight ? '3' : '2');
+  path.setAttribute('fill', 'none');
+  if(!isHighlight) path.setAttribute('marker-end', 'url(#arrow)');
+  
+  // Agregar ID para identificar la línea luego (origen-destino)
+  path.dataset.from = n1.dataset.nombre;
+  path.dataset.to = n2.dataset.nombre;
+  
+  if(isHighlight) {
+    // Las líneas resaltadas van encima
+    svg.appendChild(path);
+  } else {
+    svg.insertBefore(path, svg.firstChild);
+  }
+}
 
-function guardarAprobados(){ const nodes = Array.from(gridArea.querySelectorAll('.ramo')); const aprobados = nodes.filter(n=>n.classList.contains('aprobado')).map(n=>n.dataset.nombre); localStorage.setItem(LS_KEY_APPROVED, JSON.stringify(aprobados)); actualizarCreditos(); }
+// -----------------------------------------------------
+// Interacciones Avanzadas (Highlight, Search, Modal)
+// -----------------------------------------------------
 
-function actualizarCreditos(){ const nodes = Array.from(gridArea.querySelectorAll('.ramo')); let total=0; nodes.forEach(n=>{ if(n.classList.contains('aprobado')) total += parseInt(n.dataset.creditos||0); }); creditosTotales.innerText = `Créditos: ${total}`; }
+function highlightPath(node, active) {
+  // 1. Atenuar/Restaurar otros
+  const allNodes = document.querySelectorAll('.ramo');
+  const allPaths = svg.querySelectorAll('path');
+  
+  if (!active) {
+    allNodes.forEach(n => n.classList.remove('dimmed'));
+    // Redibujar normal
+    drawLines(); 
+    return;
+  }
+  
+  // Estamos en hover activo
+  allNodes.forEach(n => n.classList.add('dimmed'));
+  node.classList.remove('dimmed'); // El actual no se atenúa
+  
+  // Buscar padres (prerrequisitos) y hijos (quienes me requieren)
+  const name = node.dataset.nombre;
+  
+  // Highlight Prerrequisitos (hacia atrás)
+  const prereqs = (node.dataset.prer||'').split(',').map(s=>s.trim());
+  prereqs.forEach(p => {
+    const parent = Array.from(allNodes).find(n=>n.dataset.nombre===p);
+    if(parent) {
+      parent.classList.remove('dimmed');
+      // Dibujar linea highlight P -> Node
+      drawLine(parent, node, null, true);
+    }
+  });
 
-function abrirModal(node){ activeRamo = node; modalTitle.innerText = node.dataset.nombre; modalCred.innerText = `Créditos: ${node.dataset.creditos}`; modalDesc.innerText = node.dataset.desc || ''; modalBack.style.display = 'flex'; }
-function cerrarModal(){ modalBack.style.display='none'; activeRamo=null; }
+  // Highlight Desbloqueados (hacia adelante)
+  allNodes.forEach(child => {
+    const childPrereqs = (child.dataset.prer||'').split(',').map(s=>s.trim());
+    if(childPrereqs.includes(name)) {
+      child.classList.remove('dimmed');
+      // Dibujar linea highlight Node -> Child
+      drawLine(node, child, null, true);
+    }
+  });
+}
 
-document.getElementById('closeModal').addEventListener('click', cerrarModal);
-modalBack.addEventListener('click', e=>{ if(e.target===modalBack) cerrarModal(); });
+function handleSearch(e) {
+  const term = e.target.value.toLowerCase();
+  const nodes = document.querySelectorAll('.ramo');
+  
+  nodes.forEach(n => {
+    const txt = n.dataset.nombre.toLowerCase();
+    if(txt.includes(term)) {
+      n.style.display = 'flex';
+      n.classList.remove('dimmed');
+    } else {
+      // Opción A: Ocultar (desordena el grid) -> n.style.display = 'none';
+      // Opción B: Atenuar mucho
+      if(term !== '') n.classList.add('dimmed');
+      else n.classList.remove('dimmed');
+    }
+  });
+}
 
-document.getElementById('toggleAprBtn').addEventListener('click', ()=>{
-  if(!activeRamo) return;
-  if(!activeRamo.classList.contains('aprobado')){
-    const prereq = (activeRamo.dataset.prerrequisitos||'').split(',').map(s=>s.trim()).filter(Boolean);
-    for(const name of prereq){ const n = Array.from(gridArea.querySelectorAll('.ramo')).find(x=>x.dataset.nombre===name); if(n && !n.classList.contains('aprobado')){ alert('No puedes aprobar: falta \"'+name+'\" como prerrequisito.'); return; } }
-    activeRamo.classList.add('aprobado');
-  } else { activeRamo.classList.remove('aprobado'); }
-  guardarAprobados(); drawAllLines(); cerrarModal();
-});
+function openModal(node) {
+  activeRamo = node;
+  const isBlocked = node.classList.contains('bloqueado');
+  const isApproved = node.classList.contains('aprobado');
+  
+  document.getElementById('modalTitle').innerText = node.dataset.nombre;
+  document.getElementById('modalDesc').innerText = node.dataset.desc;
+  
+  const btn = document.getElementById('modalActionBtn');
+  
+  if (isBlocked) {
+    btn.disabled = true;
+    btn.innerText = "Bloqueado (Faltan prerrequisitos)";
+    btn.style.background = "#ccc";
+  } else {
+    btn.disabled = false;
+    if (isApproved) {
+      btn.innerText = "Desmarcar como Aprobado";
+      btn.className = "btn"; // estilo secundario
+      btn.style.background = "";
+    } else {
+      btn.innerText = "Aprobar Ramo";
+      btn.className = "btn btn-primary";
+    }
+  }
+  
+  document.getElementById('modalBack').style.display = 'flex';
+}
 
-// Reset / Export / Import
-document.getElementById('resetBtn').addEventListener('click', ()=>{ if(!confirm('¿Restablecer progreso?')) return; localStorage.removeItem(LS_KEY_APPROVED); location.reload(); });
+function closeModal() {
+  document.getElementById('modalBack').style.display = 'none';
+  activeRamo = null;
+}
 
-document.getElementById('exportBtn').addEventListener('click', ()=>{ const data = {aprobados: JSON.parse(localStorage.getItem(LS_KEY_APPROVED)||'[]')}; const blob = new Blob([JSON.stringify(data,null,2)],{type:'application/json'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href=url; a.download='progreso_pem_malla.json'; a.click(); URL.revokeObjectURL(url); });
+function toggleStatus() {
+  if (!activeRamo) return;
+  const nombre = activeRamo.dataset.nombre;
+  let aprobados = getAprobados();
+  
+  if (aprobados.includes(nombre)) {
+    // Quitar, pero verificar dependencias
+    // (Si quito Cálculo I, Cálculo II debería quedar bloqueado/advertencia? 
+    // Por simplicidad, permitimos quitar, el sistema recalculará bloqueos visuales)
+    aprobados = aprobados.filter(x => x !== nombre);
+  } else {
+    aprobados.push(nombre);
+  }
+  
+  // Guardar (Local y Nube si existe)
+  if (window.guardarDatos) {
+    window.guardarDatos(aprobados);
+  } else {
+    localStorage.setItem(LS_KEY, JSON.stringify(aprobados));
+  }
+  
+  loadProgress(); // Recalcular todo
+  closeModal();
+}
 
-document.getElementById('importBtn').addEventListener('click', ()=>{ const input = document.createElement('input'); input.type='file'; input.accept='application/json'; input.onchange = ()=>{ const f = input.files[0]; if(!f) return; const reader = new FileReader(); reader.onload = e=>{ try{ const data = JSON.parse(e.target.result); if(data.aprobados) localStorage.setItem(LS_KEY_APPROVED, JSON.stringify(data.aprobados)); alert('Importado. Se recargará la página.'); location.reload(); }catch(err){ alert('Archivo inválido'); } }; reader.readAsText(f); }; input.click(); });
+// Arrancar
+window.addEventListener('load', () => setTimeout(init, 100));
 
-// Inicialización
-function init(){ crearRamosDesdeJSON(); cargarAprobados(); actualizarCreditos(); drawAllLines(); window.addEventListener('resize', ()=>{ drawAllLines(); }); }
-
-window.addEventListener('load', ()=>{ setTimeout(init,120); });
 </script>
 </body>
 </html>
