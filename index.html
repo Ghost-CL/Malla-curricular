@@ -4,6 +4,10 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Malla Interactiva PEM Matemática — Pro</title>
+<meta name="theme-color" content="#3b82f6">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
@@ -15,49 +19,45 @@
     --border: #e2e8f0;
     --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     --line-color: #94a3b8;
-    --line-active: #3b82f6;
-    --line-width: 2px;
-    
-    /* Colores de estado */
     --locked-bg: #e2e8f0;
     --locked-text: #94a3b8;
-    --approved-filter: grayscale(80%) opacity(0.7);
+    --ok: #10b981;
+    --warn: #f59e0b;
+    --blue: #3b82f6;
   }
 
-  /* Modo Oscuro */
   body.dark-mode {
     --bg: #0f172a;
     --text: #f1f5f9;
     --card-bg: #1e293b;
     --border: #334155;
-    --line-color: #475569;
+    --line-color: #64748b;
     --locked-bg: #1e293b;
-    --locked-text: #475569;
+    --locked-text: #64748b;
     --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
   }
 
+  * { box-sizing: border-box; }
   body { font-family: 'Segoe UI', system-ui, sans-serif; margin: 0; background: var(--bg); color: var(--text); transition: background 0.3s, color 0.3s; }
-  
-  /* Header y Controles */
-  header { 
-    background: var(--card-bg); 
-    padding: 1rem 2rem; 
-    border-bottom: 1px solid var(--border); 
-    display: flex; 
-    flex-wrap: wrap; 
-    gap: 1rem; 
-    align-items: center; 
+
+  /* Header */
+  header {
+    background: var(--card-bg);
+    padding: 1rem 2rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: center;
     justify-content: space-between;
     box-shadow: var(--shadow);
     position: sticky;
     top: 0;
     z-index: 50;
   }
-
   .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.2rem; }
-  
   .controls-group { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-  
+
   .btn {
     padding: 8px 16px;
     border-radius: 8px;
@@ -66,14 +66,18 @@
     color: var(--text);
     cursor: pointer;
     font-size: 0.9rem;
+    font-family: inherit;
     display: flex;
     align-items: center;
     gap: 6px;
     transition: all 0.2s;
   }
   .btn:hover { background: var(--border); }
-  .btn-primary { background: #3b82f6; color: white; border: none; }
+  .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+  .btn.active { background: var(--ok); color: #fff; border-color: var(--ok); }
+  .btn-primary { background: var(--blue); color: white; border: none; }
   .btn-primary:hover { background: #2563eb; }
+  .btn:focus-visible, .ramo:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
 
   input[type="text"] {
     padding: 8px 12px;
@@ -82,12 +86,14 @@
     background: var(--bg);
     color: var(--text);
     width: 200px;
+    font-family: inherit;
   }
+  input.invalid { border-color: #ef4444; }
 
   /* Dashboard */
   .dashboard {
     max-width: 1400px;
-    margin: 20px auto;
+    margin: 20px auto 10px;
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 1rem;
@@ -105,35 +111,63 @@
   }
   .stat-val { font-size: 1.5rem; font-weight: bold; }
   .stat-label { font-size: 0.85rem; opacity: 0.8; }
+  .stat-sub { font-size: 0.78rem; opacity: 0.7; }
   .progress-bar { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; margin-top: 5px; }
-  .progress-fill { height: 100%; background: #10b981; width: 0%; transition: width 0.5s ease; }
+  .progress-fill { height: 100%; background: var(--ok); width: 0%; transition: width 0.5s ease; }
+
+  /* Leyenda y resumen */
+  .info-wrap { max-width: 1400px; margin: 0 auto; padding: 0 20px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; font-size: 0.82rem; margin: 10px 0; opacity: 0.9; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend .hint { opacity: 0.7; }
+  .sw { width: 16px; height: 16px; border-radius: 4px; display: inline-block; }
+  .sw-disp { background: linear-gradient(135deg, #6ee7b7, #10b981); }
+  .sw-cur { background: var(--card-bg); border: 2px dashed var(--warn); }
+  .sw-ok { background: var(--card-bg); border: 2px solid var(--ok); }
+  .sw-lock { background: var(--locked-bg); border: 2px dashed var(--border); }
+
+  details.sem-resumen { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); padding: 10px 15px; margin-bottom: 10px; }
+  details.sem-resumen summary { cursor: pointer; font-weight: 600; font-size: 0.95rem; }
+  .sem-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-top: 12px; }
+  .sem-chip { border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; font-size: 0.82rem; }
+  .sem-chip.done { border-color: var(--ok); }
+  .sem-chip .sem-t { font-weight: 700; }
+  .sem-chip .sem-v { opacity: 0.8; margin-top: 2px; }
 
   /* Canvas y Grid */
   .canvas-wrap {
     max-width: 1400px;
     margin: 20px auto;
-    position: relative;
     background: var(--card-bg);
     border-radius: 16px;
     box-shadow: var(--shadow);
-    overflow: auto; /* Scroll si es muy grande */
+    overflow: auto;
     padding: 40px;
-    min-height: 800px;
   }
-  
-  #svgLayer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
+  .inner { position: relative; width: max-content; margin: 0 auto; isolation: isolate; }
+  #svgLayer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; overflow: visible; }
 
   .grid-area {
     position: relative;
     display: grid;
-    grid-template-columns: repeat(6, 180px); /* Ancho fijo para estabilidad */
+    grid-template-columns: repeat(6, 180px);
     grid-auto-rows: 120px;
-    gap: 40px 30px; /* Espaciado vertical y horizontal */
+    gap: 40px 30px;
     z-index: 2;
-    justify-content: center;
   }
+  .sem-header { display: none; font-weight: 700; font-size: 0.95rem; padding: 4px 2px; border-bottom: 2px solid var(--border); grid-column: 1 / -1; }
+  .sem-header.empty { display: none !important; }
 
-  /* Estilos de Ramo */
+  /* Líneas de prerrequisitos */
+  .line { fill: none; stroke: var(--line-color); stroke-width: 2; opacity: 0.55; marker-end: url(#arrow); transition: opacity 0.2s; }
+  .line.ok { stroke: var(--ok); opacity: 0.5; marker-end: url(#arrow-ok); }
+  .line.dim { opacity: 0.06; }
+  .line.hl { stroke: var(--blue); stroke-width: 3; opacity: 1; marker-end: url(#arrow-hl); }
+  #arrow path { fill: var(--line-color); }
+  #arrow-ok path { fill: var(--ok); }
+  #arrow-hl path { fill: var(--blue); }
+
+  /* Ramos */
   .ramo {
     position: relative;
     padding: 12px;
@@ -144,17 +178,17 @@
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+    transition: transform 0.25s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.25s, opacity 0.25s;
     font-size: 0.85rem;
     z-index: 10;
+    min-width: 0;
   }
-  
   .ramo:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.15); z-index: 20; }
-  .titulo { font-weight: 700; line-height: 1.3; margin-bottom: 4px; }
-  .meta { font-size: 0.75rem; opacity: 0.9; display: flex; justify-content: space-between; }
-  .status-icon { font-size: 1rem; }
+  .titulo { font-weight: 700; line-height: 1.3; margin-bottom: 4px; overflow-wrap: anywhere; }
+  .meta { font-size: 0.75rem; opacity: 0.95; display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+  .nota { background: var(--ok); color: #fff; border-radius: 6px; padding: 0 6px; font-weight: 700; }
+  .nota:empty { display: none; }
 
-  /* Colores de semestre (mismos que antes, ajustados) */
   .s1{background:linear-gradient(135deg,#6ee7b7,#10b981)}
   .s2{background:linear-gradient(135deg,#fbbf24,#fb923c)}
   .s3{background:linear-gradient(135deg,#a78bfa,#7c3aed)}
@@ -165,59 +199,79 @@
   .s8{background:linear-gradient(135deg,#22d3ee,#0ea5e9)}
   .s9{background:linear-gradient(135deg,#6b7280,#374151)}
 
-  /* ESTADOS LÓGICOS */
-  
-  /* Aprobado */
-  .ramo.aprobado {
-    background: var(--card-bg) !important;
-    color: var(--text);
-    border: 2px solid #10b981;
-    opacity: 0.8;
+  /* Estados */
+  .ramo.aprobado, .ramo.cursando { background: var(--card-bg) !important; color: var(--text); }
+  .ramo.aprobado { border: 2px solid var(--ok); }
+  .ramo.cursando { border: 2px dashed var(--warn); }
+  .ramo.aprobado::after, .ramo.cursando::after {
+    position: absolute; top: -10px; right: -10px; color: #fff; width: 24px; height: 24px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; font-size: 12px;
   }
-  .ramo.aprobado::after {
-    content: "✔"; position: absolute; top: -10px; right: -10px; background: #10b981; color: #fff; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px;
-  }
-  /* Bloqueado (Candado) */
+  .ramo.aprobado::after { content: "✔"; background: var(--ok); }
+  .ramo.cursando::after { content: "\f017"; font-family: "Font Awesome 6 Free"; font-weight: 900; background: var(--warn); }
+
   .ramo.bloqueado {
     background: var(--locked-bg) !important;
     color: var(--locked-text) !important;
-    cursor: not-allowed;
+    cursor: pointer;
     box-shadow: none;
     border: 2px dashed var(--border);
   }
-  .ramo.bloqueado .titulo { opacity: 0.7; }
+  .ramo.bloqueado .titulo { opacity: 0.8; }
   .ramo.bloqueado:hover { transform: none; }
 
-  /* Efecto Dim (cuando se busca o se hace hover en otro) */
-  .ramo.dimmed { opacity: 0.15; filter: grayscale(100%); }
+  .ramo.dimmed, .ramo.hover-dim { opacity: 0.15; filter: grayscale(100%); }
 
   /* Modal */
-  .modal-back { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 100; backdrop-filter: blur(2px); }
-  .modal { background: var(--card-bg); padding: 24px; border-radius: 16px; width: 90%; max-width: 500px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); border: 1px solid var(--border); }
-  .modal h3 { margin-top: 0; font-size: 1.5rem; }
+  .modal-back { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 100; backdrop-filter: blur(2px); padding: 12px; }
+  .modal { background: var(--card-bg); padding: 24px; border-radius: 16px; width: 100%; max-width: 520px; max-height: 92vh; overflow: auto; box-shadow: 0 20px 50px rgba(0,0,0,0.3); border: 1px solid var(--border); }
+  .modal h3 { margin: 0 0 4px; font-size: 1.35rem; }
+  .modal-meta { font-size: 0.85rem; opacity: 0.75; margin-bottom: 10px; }
+  .prereq-title { font-size: 0.85rem; font-weight: 600; margin: 12px 0 6px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { font-size: 0.75rem; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--border); }
+  .chip.ok { border-color: var(--ok); color: var(--ok); }
+  .chip.no { border-color: #ef4444; color: #ef4444; }
+  .nota-row { margin-top: 14px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .nota-row label { font-size: 0.9rem; font-weight: 600; }
+  #notaInput { width: 110px; }
+  #notaMsg { font-size: 0.8rem; opacity: 0.8; }
 
-  /* Footer */
-  footer { text-align: center; padding: 40px; color: #64748b; font-size: 0.9rem; }
+  footer { text-align: center; padding: 30px 20px 40px; color: #64748b; font-size: 0.9rem; }
 
-  /* Responsive Mobile */
+  /* Móvil: lista por semestres */
   @media (max-width: 768px) {
-    .grid-area { grid-template-columns: repeat(2, 1fr); gap: 15px; }
-    .ramo { font-size: 0.8rem; min-height: 80px; }
-    .controls-group span { display: none; } /* Ocultar textos de botones */
-    header { padding: 10px; }
-    .dashboard { grid-template-columns: 1fr; }
+    header { padding: 10px 12px; gap: 8px; }
+    .brand { font-size: 1rem; }
+    .controls-group { width: 100%; }
+    #searchInput { flex: 1; width: auto; min-width: 120px; }
+    .btn .lbl { display: none; }
+    .btn { padding: 8px 12px; }
+    .dashboard { grid-template-columns: 1fr 1fr; padding: 0 12px; margin: 12px auto 6px; gap: 0.6rem; }
+    .stat-card { padding: 10px; }
+    .stat-card:last-child { grid-column: 1 / -1; }
+    .stat-val { font-size: 1.2rem; }
+    .legend { font-size: 0.78rem; gap: 6px 12px; }
+    .info-wrap { padding: 0 12px; }
+    .canvas-wrap { margin: 12px; padding: 14px; border-radius: 12px; }
+    .inner { width: auto; }
+    .grid-area { grid-template-columns: repeat(2, 1fr); grid-auto-rows: auto; gap: 12px; }
+    .sem-header { display: block; margin-top: 6px; }
+    .ramo { grid-column-start: auto !important; grid-row-start: auto !important; min-height: 92px; font-size: 0.8rem; }
+    #svgLayer { display: none; }
+    .ramo.dimmed { display: none; }
   }
 </style>
 
 <script type="module">
   // ------------------------------------------------------------------
-  // CONFIGURACIÓN DE FIREBASE
+  // FIREBASE: inicio de sesión con Google + sincronización en la nube
+  // Las claves web de Firebase son públicas por diseño; lo que protege
+  // los datos son las reglas de Firestore (cada usuario solo accede a lo suyo).
   // ------------------------------------------------------------------
-  // Las claves web de Firebase son públicas por diseño; lo que protege los
-  // datos son las reglas de Firestore (cada usuario solo lee/escribe lo suyo).
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-  import { getFirestore, doc, getDoc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import { getFirestore, doc, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyDsgMpdpGcWdrYd3aR2OQgVCG46bVlKOoI",
@@ -228,99 +282,118 @@
     appId: "1:668725085114:web:b2ba6cec37ee9a0b2f1383"
   };
 
-  const LS = 'pem_malla_aprobados_v2';
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const db = getFirestore(app);
   let user = null;
-
-  const leerLocal = () => { try { return JSON.parse(localStorage.getItem(LS) || '[]'); } catch { return []; } };
+  let unsub = null;
 
   window.doLogin = async () => {
     try {
       await signInWithPopup(auth, new GoogleAuthProvider());
     } catch (e) {
       console.error(e);
-      if (e.code !== 'auth/popup-closed-by-user' && e.code !== 'auth/cancelled-popup-request') {
+      if (e.code === 'auth/popup-blocked') {
+        alert("Tu navegador bloqueó la ventana de Google. Permite las ventanas emergentes para este sitio e inténtalo de nuevo.");
+      } else if (e.code !== 'auth/popup-closed-by-user' && e.code !== 'auth/cancelled-popup-request') {
         alert("No se pudo iniciar sesión: " + e.message);
       }
     }
   };
 
-  window.doLogout = async () => {
-    await signOut(auth);
-  };
+  window.doLogout = async () => { await signOut(auth); };
 
-  // Observador de sesión: se mantiene entre visitas y dispositivos
-  onAuthStateChanged(auth, async (u) => {
-    user = u;
+  function pintarBoton(texto, onclick) {
     const btn = document.getElementById('authBtn');
+    btn.replaceChildren();
+    const i = document.createElement('i');
+    i.className = 'fab fa-google';
+    const s = document.createElement('span');
+    s.textContent = texto;
+    btn.append(i, ' ', s);
+    btn.onclick = onclick;
+  }
+
+  // Escucha la nube en vivo: un cambio en otro dispositivo aparece aquí al instante
+  function escucharNube() {
+    if (unsub) unsub();
+    const ref = doc(db, "avances", user.uid);
+    unsub = onSnapshot(ref, (snap) => {
+      if (snap.metadata.hasPendingWrites) return;
+      if (snap.exists()) {
+        window.PEM.aplicarNube(snap.data());
+      } else {
+        const local = window.PEM.getState();
+        if (local.aprobados.length || local.cursando.length) {
+          setDoc(ref, { ...local, fecha: new Date() }).catch(console.error);
+        }
+      }
+    }, (e) => console.error("Error de sincronización", e));
+  }
+
+  onAuthStateChanged(auth, (u) => {
+    user = u;
     if (user) {
       const nombre = (user.displayName || 'Cuenta').split(' ')[0];
-      btn.innerHTML = `<i class="fab fa-google"></i> <span>${nombre} (Salir)</span>`;
-      btn.onclick = window.doLogout;
-      await sincronizar();
+      pintarBoton(nombre + ' (Salir)', window.doLogout);
+      escucharNube();
     } else {
-      btn.innerHTML = `<i class="fab fa-google"></i> <span>Acceder con Google</span>`;
-      btn.onclick = window.doLogin;
+      if (unsub) { unsub(); unsub = null; }
+      pintarBoton('Acceder con Google', window.doLogin);
     }
   });
 
-  // Guardado híbrido: siempre local + nube si hay sesión
-  window.guardarDatos = async (aprobados) => {
-    localStorage.setItem(LS, JSON.stringify(aprobados));
-    if (user) {
-      try {
-        await setDoc(doc(db, "avances", user.uid), { aprobados, fecha: new Date() });
-      } catch (e) { console.error("Error guardando en la nube", e); }
-    }
+  window.guardarNube = async (state) => {
+    if (!user) return;
+    try {
+      await setDoc(doc(db, "avances", user.uid), {
+        aprobados: state.aprobados, cursando: state.cursando, notas: state.notas, fecha: new Date()
+      });
+    } catch (e) { console.error("Error guardando en la nube", e); }
   };
 
-  // Al iniciar sesión: si hay datos en la nube se usan; si no, se sube lo local
-  async function sincronizar() {
-    try {
-      const ref = doc(db, "avances", user.uid);
-      const snap = await getDoc(ref);
-      if (snap.exists()) {
-        localStorage.setItem(LS, JSON.stringify(snap.data().aprobados || []));
-        if (window.refrescarProgreso) window.refrescarProgreso();
-      } else {
-        const local = leerLocal();
-        if (local.length) await setDoc(ref, { aprobados: local, fecha: new Date() });
-      }
-    } catch (e) { console.error("Error sincronizando", e); }
-  }
-
   window.borrarNube = async () => {
-    if (user) { try { await deleteDoc(doc(db, "avances", user.uid)); } catch (e) { console.error(e); } }
+    if (!user) return;
+    if (unsub) { unsub(); unsub = null; }
+    try { await deleteDoc(doc(db, "avances", user.uid)); } catch (e) { console.error(e); }
   };
 </script>
 </head>
 
 <body>
+<script>
+  try {
+    var _d = localStorage.getItem('pem_dark');
+    if (_d === '1' || (_d === null && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches)) document.body.classList.add('dark-mode');
+  } catch (e) {}
+</script>
 
 <header>
   <div class="brand">
     <i class="fas fa-graduation-cap"></i> PEM Matemática
   </div>
-  
+
   <div class="controls-group">
-    <input type="text" id="searchInput" placeholder="Buscar ramo..." />
-    
-    <button class="btn" id="darkModeBtn" title="Modo Oscuro">
+    <input type="text" id="searchInput" placeholder="Buscar ramo..." aria-label="Buscar ramo" />
+
+    <button class="btn" id="filterBtn" title="Mostrar solo los ramos que puedo tomar ahora" aria-pressed="false">
+      <i class="fas fa-unlock"></i> <span class="lbl">Disponibles</span>
+    </button>
+
+    <button class="btn" id="darkModeBtn" title="Modo oscuro" aria-label="Modo oscuro">
       <i class="fas fa-moon"></i>
     </button>
-    
-    <button class="btn" id="exportBtn" title="Descargar Imagen">
-      <i class="fas fa-camera"></i> <span>Imagen</span>
+
+    <button class="btn" id="exportBtn" title="Descargar imagen de la malla">
+      <i class="fas fa-camera"></i> <span class="lbl">Imagen</span>
     </button>
-    
-    <button class="btn" id="resetBtn" title="Reiniciar">
+
+    <button class="btn" id="resetBtn" title="Borrar todo el progreso" aria-label="Borrar progreso">
       <i class="fas fa-trash-alt"></i>
     </button>
 
-    <button class="btn btn-primary" id="authBtn" onclick="window.doLogin()">
-      <i class="fab fa-google"></i> <span>Login</span>
+    <button class="btn btn-primary" id="authBtn" onclick="window.doLogin && window.doLogin()">
+      <i class="fab fa-google"></i> <span>Acceder con Google</span>
     </button>
   </div>
 </header>
@@ -339,388 +412,837 @@
     <div class="stat-label">Ramos Aprobados</div>
     <div class="stat-val" id="statRamos">0 / 0</div>
   </div>
+  <div class="stat-card">
+    <div class="stat-label">Cursando</div>
+    <div class="stat-val" id="statCursando">0</div>
+    <div class="stat-sub" id="statCursandoSub">0 créditos</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Promedio (ponderado)</div>
+    <div class="stat-val" id="statPromedio">—</div>
+    <div class="stat-sub" id="statPromedioSub">Agrega notas en cada ramo aprobado</div>
+  </div>
+</div>
+
+<div class="info-wrap">
+  <div class="legend">
+    <span><i class="sw sw-disp"></i> Disponible</span>
+    <span><i class="sw sw-cur"></i> Cursando</span>
+    <span><i class="sw sw-ok"></i> Aprobado</span>
+    <span><i class="sw sw-lock"></i> Bloqueado (faltan prerrequisitos)</span>
+    <span class="hint">Toca un ramo para ver detalles, marcarlo o poner nota.</span>
+  </div>
+  <details class="sem-resumen">
+    <summary>Resumen por semestre</summary>
+    <div class="sem-grid" id="semResumen"></div>
+  </details>
 </div>
 
 <div class="canvas-wrap" id="canvasWrap">
-  <svg id="svgLayer" xmlns="http://www.w3.org/2000/svg"></svg>
-  <div class="grid-area" id="gridArea"></div>
+  <div class="inner" id="inner">
+    <svg id="svgLayer" xmlns="http://www.w3.org/2000/svg"></svg>
+    <div class="grid-area" id="gridArea"></div>
+  </div>
 </div>
 
 <footer>
-  Sistema de Malla Interactiva v2.0 <br>
+  Sistema de Malla Interactiva v3.0 <br>
   Inicia sesión con Google para guardar tu avance y verlo en cualquier dispositivo.
 </footer>
 
 <template id="ramoTemplate">
-  <div class="ramo">
+  <div class="ramo" role="button" tabindex="0">
     <div style="position:absolute; top:8px; right:8px;"><i class="fas fa-lock lock-icon" style="display:none"></i></div>
     <div class="titulo"></div>
     <div class="meta">
       <span class="creditos"></span>
+      <span class="nota"></span>
       <span class="sigla">SEM <span class="semestre-num"></span></span>
     </div>
   </div>
 </template>
 
-<div class="modal-back" id="modalBack">
+<div class="modal-back" id="modalBack" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
   <div class="modal">
     <h3 id="modalTitle">Nombre del Ramo</h3>
-    <p id="modalDesc">Descripción...</p>
+    <div class="modal-meta" id="modalMeta"></div>
+    <p id="modalDesc" style="margin:0">Descripción...</p>
+    <div class="prereq-title">Prerrequisitos</div>
+    <div class="chips" id="modalPrereq"></div>
+    <div class="nota-row" id="notaRow">
+      <label for="notaInput">Nota (1,0 a 7,0)</label>
+      <input type="text" id="notaInput" inputmode="decimal" placeholder="Ej: 5,5" autocomplete="off" />
+      <span id="notaMsg"></span>
+    </div>
     <hr style="border:0; border-top:1px solid var(--border); margin:15px 0;">
     <div class="controls-group" style="justify-content: flex-end;">
-      <button class="btn" id="modalCloseBtn">Cancelar</button>
-      <button class="btn btn-primary" id="modalActionBtn">Aprobar Ramo</button>
+      <button class="btn" id="modalCloseBtn">Cerrar</button>
+      <button class="btn" id="modalCursandoBtn">Marcar como cursando</button>
+      <button class="btn btn-primary" id="modalActionBtn">Aprobar ramo</button>
     </div>
   </div>
 </div>
 
 <script id="dataRamos" type="application/json">
 [
-  {"nombre":"COMUNICACIÓN EN ESPAÑOL","prer":"","creditos":4,"desc":"Desarrollo de habilidades comunicativas académicas.","row":1,"col":1,"cls":"s1"},
-  {"nombre":"EDUCACIÓN Y SOCIEDAD","prer":"","creditos":4,"desc":"Vínculos entre sistemas educativos y sociedad.","row":1,"col":2,"cls":"s1"},
-  {"nombre":"INFORMÁTICA EDUCATIVA","prer":"","creditos":4,"desc":"Uso pedagógico de TIC en educación.","row":1,"col":3,"cls":"s1"},
-  {"nombre":"ARITMÉTICA","prer":"","creditos":6,"desc":"Estructuras y razonamiento aritmético.","row":1,"col":4,"cls":"s1"},
-  {"nombre":"INTRODUCCIÓN AL ÁLGEBRA","prer":"","creditos":8,"desc":"Conceptos básicos de álgebra y demostración.","row":1,"col":5,"cls":"s1"},
-  {"nombre":"FUNDAMENTOS FILOSÓFICOS","prer":"","creditos":4,"desc":"Bases filosóficas de la educación.","row":1,"col":6,"cls":"s1"},
-  {"nombre":"APRENDIZAJE Y DESARROLLO HUMANO","prer":"EDUCACIÓN Y SOCIEDAD","creditos":4,"desc":"Procesos del desarrollo y aprendizaje humano.","row":2,"col":2,"cls":"s2"},
-  {"nombre":"PERSPECTIVAS CURRICULARES EN EDUCACIÓN","prer":"EDUCACIÓN Y SOCIEDAD","creditos":4,"desc":"Teorías y diseño del currículum.","row":2,"col":3,"cls":"s2"},
-  {"nombre":"INTRODUCCIÓN AL ANÁLISIS","prer":"ARITMÉTICA,INTRODUCCIÓN AL ÁLGEBRA","creditos":8,"desc":"Fundamentos de análisis matemático.","row":2,"col":4,"cls":"s2"},
-  {"nombre":"GEOMETRÍA PLANA","prer":"ARITMÉTICA","creditos":6,"desc":"Elementos de geometría euclidiana.","row":2,"col":5,"cls":"s2"},
-  {"nombre":"FUNDAMENTOS TEOLÓGICOS","prer":"FUNDAMENTOS FILOSÓFICOS","creditos":4,"desc":"Dimensión teológica en educación.","row":2,"col":6,"cls":"s2"},
-  {"nombre":"FUNDAMENTOS DE LA INVESTIGACIÓN EDUCATIVA","prer":"APRENDIZAJE Y DESARROLLO HUMANO","creditos":4,"desc":"Principios y métodos de investigación educativa.","row":3,"col":1,"cls":"s3"},
-  {"nombre":"EVALUACIÓN PARA EL APRENDIZAJE","prer":"PERSPECTIVAS CURRICULARES EN EDUCACIÓN","creditos":4,"desc":"Evaluación formativa y para el aprendizaje.","row":3,"col":2,"cls":"s3"},
-  {"nombre":"DIDÁCTICA DE LA ARITMÉTICA","prer":"ARITMÉTICA,PERSPECTIVAS CURRICULARES EN EDUCACIÓN","creditos":6,"desc":"Estrategias para enseñar aritmética.","row":3,"col":3,"cls":"s3"},
-  {"nombre":"GEOMETRÍA DEL ESPACIO","prer":"GEOMETRÍA PLANA","creditos":7,"desc":"Geometría tridimensional y transformaciones.","row":3,"col":4,"cls":"s3"},
-  {"nombre":"ELEMENTOS DE ANÁLISIS REAL I","prer":"INTRODUCCIÓN AL ANÁLISIS","creditos":7,"desc":"Sucesiones, continuidad y derivación en R.","row":3,"col":5,"cls":"s3"},
-  {"nombre":"INCLUSIÓN EN CONTEXTOS EDUCATIVOS","prer":"APRENDIZAJE Y DESARROLLO HUMANO","creditos":4,"desc":"Educación inclusiva y atención a la diversidad.","row":4,"col":1,"cls":"s4"},
-  {"nombre":"PRÁCTICA PEDAGÓGICA I","prer":"FUNDAMENTOS DE LA INVESTIGACIÓN EDUCATIVA,EVALUACIÓN PARA EL APRENDIZAJE","creditos":4,"desc":"Experiencia inicial en aula.","row":4,"col":2,"cls":"s4"},
-  {"nombre":"DIDÁCTICA DE LA GEOMETRÍA","prer":"GEOMETRÍA DEL ESPACIO,DIDÁCTICA DE LA ARITMÉTICA","creditos":6,"desc":"Metodologías para la enseñanza de la geometría.","row":4,"col":3,"cls":"s4"},
-  {"nombre":"ÁLGEBRA LINEAL Y MATRICES","prer":"INTRODUCCIÓN AL ÁLGEBRA","creditos":7,"desc":"Espacios vectoriales, transformaciones y matrices.","row":4,"col":4,"cls":"s4"},
-  {"nombre":"ELEMENTOS DE ANÁLISIS REAL II","prer":"ELEMENTOS DE ANÁLISIS REAL I","creditos":7,"desc":"Integración y series en R.","row":4,"col":5,"cls":"s4"},
-  {"nombre":"PLANIFICACIÓN DEL CURRÍCULUM Y EVALUACIÓN DE LOS APRENDIZAJES","prer":"PERSPECTIVAS CURRICULARES EN EDUCACIÓN,EVALUACIÓN PARA EL APRENDIZAJE","creditos":4,"desc":"Planificación curricular y evaluación educativa.","row":5,"col":1,"cls":"s5"},
-  {"nombre":"PRÁCTICA PEDAGÓGICA II","prer":"PRÁCTICA PEDAGÓGICA I","creditos":4,"desc":"Profundización de práctica en aula.","row":5,"col":2,"cls":"s5"},
-  {"nombre":"AZAR Y PROBABILIDADES","prer":"ELEMENTOS DE ANÁLISIS REAL I","creditos":7,"desc":"Modelos aleatorios y probabilidad básica.","row":5,"col":3,"cls":"s5"},
-  {"nombre":"ANÁLISIS CONTINUO EN DOS Y TRES DIMENSIONES","prer":"ELEMENTOS DE ANÁLISIS REAL II","creditos":8,"desc":"Cálculo multivariable.","row":5,"col":4,"cls":"s5"},
-  {"nombre":"ECUACIONES DIFERENCIALES ORDINARIAS","prer":"ELEMENTOS DE ANÁLISIS REAL II","creditos":7,"desc":"Modelación con EDO y métodos de solución.","row":5,"col":5,"cls":"s5"},
-  {"nombre":"POLÍTICA Y GESTIÓN EDUCATIVA","prer":"INCLUSIÓN EN CONTEXTOS EDUCATIVOS","creditos":4,"desc":"Gestión educativa y políticas públicas.","row":6,"col":1,"cls":"s6"},
-  {"nombre":"PRÁCTICA PEDAGÓGICA III","prer":"PRÁCTICA PEDAGÓGICA II","creditos":6,"desc":"Práctica intermedia con mayor autonomía.","row":6,"col":2,"cls":"s6"},
-  {"nombre":"DIDÁCTICA DEL CÁLCULO","prer":"ANÁLISIS CONTINUO EN DOS Y TRES DIMENSIONES,ECUACIONES DIFERENCIALES ORDINARIAS,DIDÁCTICA DE LA ARITMÉTICA","creditos":6,"desc":"Estrategias para enseñar cálculo.","row":6,"col":3,"cls":"s6"},
-  {"nombre":"PROBABILIDADES Y ESTADÍSTICA INFERENCIAL","prer":"AZAR Y PROBABILIDADES","creditos":7,"desc":"Inferencia estadística y estimación.","row":6,"col":4,"cls":"s6"},
-  {"nombre":"ESTRUCTURAS ALGEBRAICAS","prer":"ÁLGEBRA LINEAL Y MATRICES","creditos":7,"desc":"Anillos, grupos y homomorfismos básicos.","row":6,"col":5,"cls":"s6"},
-  {"nombre":"DISEÑO DE LA INVESTIGACIÓN EDUCATIVA","prer":"FUNDAMENTOS DE LA INVESTIGACIÓN EDUCATIVA,EVALUACIÓN PARA EL APRENDIZAJE","creditos":4,"desc":"Diseños y protocolos de investigación en aula.","row":7,"col":1,"cls":"s7"},
-  {"nombre":"PRÁCTICA PEDAGÓGICA IV","prer":"PRÁCTICA PEDAGÓGICA III","creditos":6,"desc":"Práctica avanzada con responsabilidad docente.","row":7,"col":2,"cls":"s7"},
-  {"nombre":"DIDÁCTICA DE LA PROBABILIDAD Y DE LA ESTADÍSTICA","prer":"PROBABILIDADES Y ESTADÍSTICA INFERENCIAL,DIDÁCTICA DE LA ARITMÉTICA","creditos":6,"desc":"Didáctica de contenidos estocásticos.","row":7,"col":3,"cls":"s7"},
-  {"nombre":"DIDÁCTICA DEL ÁLGEBRA","prer":"ESTRUCTURAS ALGEBRAICAS,DIDÁCTICA DE LA ARITMÉTICA","creditos":6,"desc":"Enseñanza del álgebra escolar y avanzada.","row":7,"col":4,"cls":"s7"},
-  {"nombre":"ÉTICA PROFESIONAL","prer":"FUNDAMENTOS FILOSÓFICOS,FUNDAMENTOS TEOLÓGICOS","creditos":4,"desc":"Ética docente y responsabilidad profesional.","row":7,"col":5,"cls":"s7"},
-  {"nombre":"INVESTIGACIÓN EN LA PRÁCTICA EDUCATIVA","prer":"DISEÑO DE LA INVESTIGACIÓN EDUCATIVA,PRÁCTICA PEDAGÓGICA IV","creditos":4,"desc":"Indagación basada en la propia práctica.","row":8,"col":1,"cls":"s8"},
-  {"nombre":"PRÁCTICA PEDAGÓGICA V","prer":"PRÁCTICA PEDAGÓGICA IV","creditos":8,"desc":"Práctica con alto nivel de autonomía.","row":8,"col":2,"cls":"s8"},
-  {"nombre":"HISTORIA DE LA MATEMÁTICA","prer":"ESTRUCTURAS ALGEBRAICAS","creditos":6,"desc":"Desarrollo histórico de ideas matemáticas.","row":8,"col":3,"cls":"s8"},
-  {"nombre":"PRÁCTICA PROFESIONAL","prer":"PRÁCTICA PEDAGÓGICA V,ÉTICA PROFESIONAL,INVESTIGACIÓN EN LA PRÁCTICA EDUCATIVA","creditos":30,"desc":"Internado profesional con dedicación completa.","row":9,"col":2,"cls":"s9"}
+ {
+  "nombre": "COMUNICACIÓN EN ESPAÑOL",
+  "prer": "",
+  "creditos": 4,
+  "desc": "Desarrollo de habilidades comunicativas académicas.",
+  "row": 1,
+  "col": 1,
+  "cls": "s1"
+ },
+ {
+  "nombre": "EDUCACIÓN Y SOCIEDAD",
+  "prer": "",
+  "creditos": 4,
+  "desc": "Vínculos entre sistemas educativos y sociedad.",
+  "row": 1,
+  "col": 2,
+  "cls": "s1"
+ },
+ {
+  "nombre": "INFORMÁTICA EDUCATIVA",
+  "prer": "",
+  "creditos": 4,
+  "desc": "Uso pedagógico de TIC en educación.",
+  "row": 1,
+  "col": 3,
+  "cls": "s1"
+ },
+ {
+  "nombre": "ARITMÉTICA",
+  "prer": "",
+  "creditos": 6,
+  "desc": "Estructuras y razonamiento aritmético.",
+  "row": 1,
+  "col": 4,
+  "cls": "s1"
+ },
+ {
+  "nombre": "INTRODUCCIÓN AL ÁLGEBRA",
+  "prer": "",
+  "creditos": 8,
+  "desc": "Conceptos básicos de álgebra y demostración.",
+  "row": 1,
+  "col": 5,
+  "cls": "s1"
+ },
+ {
+  "nombre": "FUNDAMENTOS FILOSÓFICOS",
+  "prer": "",
+  "creditos": 4,
+  "desc": "Bases filosóficas de la educación.",
+  "row": 1,
+  "col": 6,
+  "cls": "s1"
+ },
+ {
+  "nombre": "APRENDIZAJE Y DESARROLLO HUMANO",
+  "prer": "EDUCACIÓN Y SOCIEDAD",
+  "creditos": 4,
+  "desc": "Procesos del desarrollo y aprendizaje humano.",
+  "row": 2,
+  "col": 2,
+  "cls": "s2"
+ },
+ {
+  "nombre": "PERSPECTIVAS CURRICULARES EN EDUCACIÓN",
+  "prer": "EDUCACIÓN Y SOCIEDAD",
+  "creditos": 4,
+  "desc": "Teorías y diseño del currículum.",
+  "row": 2,
+  "col": 3,
+  "cls": "s2"
+ },
+ {
+  "nombre": "INTRODUCCIÓN AL ANÁLISIS",
+  "prer": "ARITMÉTICA,INTRODUCCIÓN AL ÁLGEBRA",
+  "creditos": 8,
+  "desc": "Fundamentos de análisis matemático.",
+  "row": 2,
+  "col": 4,
+  "cls": "s2"
+ },
+ {
+  "nombre": "GEOMETRÍA PLANA",
+  "prer": "ARITMÉTICA",
+  "creditos": 6,
+  "desc": "Elementos de geometría euclidiana.",
+  "row": 2,
+  "col": 5,
+  "cls": "s2"
+ },
+ {
+  "nombre": "FUNDAMENTOS TEOLÓGICOS",
+  "prer": "FUNDAMENTOS FILOSÓFICOS",
+  "creditos": 4,
+  "desc": "Dimensión teológica en educación.",
+  "row": 2,
+  "col": 6,
+  "cls": "s2"
+ },
+ {
+  "nombre": "FUNDAMENTOS DE LA INVESTIGACIÓN EDUCATIVA",
+  "prer": "APRENDIZAJE Y DESARROLLO HUMANO",
+  "creditos": 4,
+  "desc": "Principios y métodos de investigación educativa.",
+  "row": 3,
+  "col": 1,
+  "cls": "s3"
+ },
+ {
+  "nombre": "EVALUACIÓN PARA EL APRENDIZAJE",
+  "prer": "PERSPECTIVAS CURRICULARES EN EDUCACIÓN",
+  "creditos": 4,
+  "desc": "Evaluación formativa y para el aprendizaje.",
+  "row": 3,
+  "col": 2,
+  "cls": "s3"
+ },
+ {
+  "nombre": "DIDÁCTICA DE LA ARITMÉTICA",
+  "prer": "ARITMÉTICA,PERSPECTIVAS CURRICULARES EN EDUCACIÓN",
+  "creditos": 6,
+  "desc": "Estrategias para enseñar aritmética.",
+  "row": 3,
+  "col": 3,
+  "cls": "s3"
+ },
+ {
+  "nombre": "GEOMETRÍA DEL ESPACIO",
+  "prer": "GEOMETRÍA PLANA",
+  "creditos": 7,
+  "desc": "Geometría tridimensional y transformaciones.",
+  "row": 3,
+  "col": 4,
+  "cls": "s3"
+ },
+ {
+  "nombre": "ELEMENTOS DE ANÁLISIS REAL I",
+  "prer": "INTRODUCCIÓN AL ANÁLISIS",
+  "creditos": 7,
+  "desc": "Sucesiones, continuidad y derivación en R.",
+  "row": 3,
+  "col": 5,
+  "cls": "s3"
+ },
+ {
+  "nombre": "INCLUSIÓN EN CONTEXTOS EDUCATIVOS",
+  "prer": "APRENDIZAJE Y DESARROLLO HUMANO",
+  "creditos": 4,
+  "desc": "Educación inclusiva y atención a la diversidad.",
+  "row": 4,
+  "col": 1,
+  "cls": "s4"
+ },
+ {
+  "nombre": "PRÁCTICA PEDAGÓGICA I",
+  "prer": "FUNDAMENTOS DE LA INVESTIGACIÓN EDUCATIVA,EVALUACIÓN PARA EL APRENDIZAJE",
+  "creditos": 4,
+  "desc": "Experiencia inicial en aula.",
+  "row": 4,
+  "col": 2,
+  "cls": "s4"
+ },
+ {
+  "nombre": "DIDÁCTICA DE LA GEOMETRÍA",
+  "prer": "GEOMETRÍA DEL ESPACIO,DIDÁCTICA DE LA ARITMÉTICA",
+  "creditos": 6,
+  "desc": "Metodologías para la enseñanza de la geometría.",
+  "row": 4,
+  "col": 3,
+  "cls": "s4"
+ },
+ {
+  "nombre": "ÁLGEBRA LINEAL Y MATRICES",
+  "prer": "INTRODUCCIÓN AL ÁLGEBRA",
+  "creditos": 7,
+  "desc": "Espacios vectoriales, transformaciones y matrices.",
+  "row": 4,
+  "col": 4,
+  "cls": "s4"
+ },
+ {
+  "nombre": "ELEMENTOS DE ANÁLISIS REAL II",
+  "prer": "ELEMENTOS DE ANÁLISIS REAL I",
+  "creditos": 7,
+  "desc": "Integración y series en R.",
+  "row": 4,
+  "col": 5,
+  "cls": "s4"
+ },
+ {
+  "nombre": "PLANIFICACIÓN DEL CURRÍCULUM Y EVALUACIÓN DE LOS APRENDIZAJES",
+  "prer": "PERSPECTIVAS CURRICULARES EN EDUCACIÓN,EVALUACIÓN PARA EL APRENDIZAJE",
+  "creditos": 4,
+  "desc": "Planificación curricular y evaluación educativa.",
+  "row": 5,
+  "col": 1,
+  "cls": "s5"
+ },
+ {
+  "nombre": "PRÁCTICA PEDAGÓGICA II",
+  "prer": "PRÁCTICA PEDAGÓGICA I",
+  "creditos": 4,
+  "desc": "Profundización de práctica en aula.",
+  "row": 5,
+  "col": 2,
+  "cls": "s5"
+ },
+ {
+  "nombre": "AZAR Y PROBABILIDADES",
+  "prer": "ELEMENTOS DE ANÁLISIS REAL I",
+  "creditos": 7,
+  "desc": "Modelos aleatorios y probabilidad básica.",
+  "row": 5,
+  "col": 3,
+  "cls": "s5"
+ },
+ {
+  "nombre": "ANÁLISIS CONTINUO EN DOS Y TRES DIMENSIONES",
+  "prer": "ELEMENTOS DE ANÁLISIS REAL II",
+  "creditos": 8,
+  "desc": "Cálculo multivariable.",
+  "row": 5,
+  "col": 4,
+  "cls": "s5"
+ },
+ {
+  "nombre": "ECUACIONES DIFERENCIALES ORDINARIAS",
+  "prer": "ELEMENTOS DE ANÁLISIS REAL II",
+  "creditos": 7,
+  "desc": "Modelación con EDO y métodos de solución.",
+  "row": 5,
+  "col": 5,
+  "cls": "s5"
+ },
+ {
+  "nombre": "POLÍTICA Y GESTIÓN EDUCATIVA",
+  "prer": "INCLUSIÓN EN CONTEXTOS EDUCATIVOS",
+  "creditos": 4,
+  "desc": "Gestión educativa y políticas públicas.",
+  "row": 6,
+  "col": 1,
+  "cls": "s6"
+ },
+ {
+  "nombre": "PRÁCTICA PEDAGÓGICA III",
+  "prer": "PRÁCTICA PEDAGÓGICA II",
+  "creditos": 6,
+  "desc": "Práctica intermedia con mayor autonomía.",
+  "row": 6,
+  "col": 2,
+  "cls": "s6"
+ },
+ {
+  "nombre": "DIDÁCTICA DEL CÁLCULO",
+  "prer": "ANÁLISIS CONTINUO EN DOS Y TRES DIMENSIONES,ECUACIONES DIFERENCIALES ORDINARIAS,DIDÁCTICA DE LA ARITMÉTICA",
+  "creditos": 6,
+  "desc": "Estrategias para enseñar cálculo.",
+  "row": 6,
+  "col": 3,
+  "cls": "s6"
+ },
+ {
+  "nombre": "PROBABILIDADES Y ESTADÍSTICA INFERENCIAL",
+  "prer": "AZAR Y PROBABILIDADES",
+  "creditos": 7,
+  "desc": "Inferencia estadística y estimación.",
+  "row": 6,
+  "col": 4,
+  "cls": "s6"
+ },
+ {
+  "nombre": "ESTRUCTURAS ALGEBRAICAS",
+  "prer": "ÁLGEBRA LINEAL Y MATRICES",
+  "creditos": 7,
+  "desc": "Anillos, grupos y homomorfismos básicos.",
+  "row": 6,
+  "col": 5,
+  "cls": "s6"
+ },
+ {
+  "nombre": "DISEÑO DE LA INVESTIGACIÓN EDUCATIVA",
+  "prer": "FUNDAMENTOS DE LA INVESTIGACIÓN EDUCATIVA,EVALUACIÓN PARA EL APRENDIZAJE",
+  "creditos": 4,
+  "desc": "Diseños y protocolos de investigación en aula.",
+  "row": 7,
+  "col": 1,
+  "cls": "s7"
+ },
+ {
+  "nombre": "PRÁCTICA PEDAGÓGICA IV",
+  "prer": "PRÁCTICA PEDAGÓGICA III",
+  "creditos": 6,
+  "desc": "Práctica avanzada con responsabilidad docente.",
+  "row": 7,
+  "col": 2,
+  "cls": "s7"
+ },
+ {
+  "nombre": "DIDÁCTICA DE LA PROBABILIDAD Y DE LA ESTADÍSTICA",
+  "prer": "PROBABILIDADES Y ESTADÍSTICA INFERENCIAL,DIDÁCTICA DE LA ARITMÉTICA",
+  "creditos": 6,
+  "desc": "Didáctica de contenidos estocásticos.",
+  "row": 7,
+  "col": 3,
+  "cls": "s7"
+ },
+ {
+  "nombre": "DIDÁCTICA DEL ÁLGEBRA",
+  "prer": "ESTRUCTURAS ALGEBRAICAS,DIDÁCTICA DE LA ARITMÉTICA",
+  "creditos": 6,
+  "desc": "Enseñanza del álgebra escolar y avanzada.",
+  "row": 7,
+  "col": 4,
+  "cls": "s7"
+ },
+ {
+  "nombre": "ÉTICA PROFESIONAL",
+  "prer": "FUNDAMENTOS FILOSÓFICOS,FUNDAMENTOS TEOLÓGICOS",
+  "creditos": 4,
+  "desc": "Ética docente y responsabilidad profesional.",
+  "row": 7,
+  "col": 5,
+  "cls": "s7"
+ },
+ {
+  "nombre": "INVESTIGACIÓN EN LA PRÁCTICA EDUCATIVA",
+  "prer": "DISEÑO DE LA INVESTIGACIÓN EDUCATIVA,PRÁCTICA PEDAGÓGICA IV",
+  "creditos": 4,
+  "desc": "Indagación basada en la propia práctica.",
+  "row": 8,
+  "col": 1,
+  "cls": "s8"
+ },
+ {
+  "nombre": "PRÁCTICA PEDAGÓGICA V",
+  "prer": "PRÁCTICA PEDAGÓGICA IV",
+  "creditos": 8,
+  "desc": "Práctica con alto nivel de autonomía.",
+  "row": 8,
+  "col": 2,
+  "cls": "s8"
+ },
+ {
+  "nombre": "HISTORIA DE LA MATEMÁTICA",
+  "prer": "ESTRUCTURAS ALGEBRAICAS",
+  "creditos": 6,
+  "desc": "Desarrollo histórico de ideas matemáticas.",
+  "row": 8,
+  "col": 3,
+  "cls": "s8"
+ },
+ {
+  "nombre": "PRÁCTICA PROFESIONAL",
+  "prer": "PRÁCTICA PEDAGÓGICA V,ÉTICA PROFESIONAL,INVESTIGACIÓN EN LA PRÁCTICA EDUCATIVA",
+  "creditos": 30,
+  "desc": "Internado profesional con dedicación completa.",
+  "row": 9,
+  "col": 2,
+  "cls": "s9"
+ }
 ]
 </script>
 
 <script>
 /* --------------------------------------------------------
-   LÓGICA PRINCIPAL DEL CLIENTE
+   LÓGICA PRINCIPAL
    -------------------------------------------------------- */
+const LS_KEY = 'pem_malla_v3';
+const LS_OLD = 'pem_malla_aprobados_v2';
+const LS_DARK = 'pem_dark';
+
 const gridArea = document.getElementById('gridArea');
 const svg = document.getElementById('svgLayer');
 const searchInput = document.getElementById('searchInput');
+const SVGNS = 'http://www.w3.org/2000/svg';
+
 let allRamosData = [];
+const byName = {};
 let activeRamo = null;
+let soloDisponibles = false;
 
-// Configuración LocalStorage
-const LS_KEY = 'pem_malla_aprobados_v2';
+// ---------- Estado (aprobados, cursando, notas) ----------
+function estadoVacio() { return { aprobados: [], cursando: [], notas: {} }; }
 
+function normalizar(d) {
+  d = d || {};
+  const lista = (x) => Array.isArray(x) ? x.filter(v => typeof v === 'string') : [];
+  const aprobados = lista(d.aprobados);
+  const cursando = lista(d.cursando).filter(n => !aprobados.includes(n));
+  const notas = {};
+  if (d.notas && typeof d.notas === 'object') {
+    for (const k in d.notas) {
+      const v = Number(d.notas[k]);
+      if (isFinite(v) && v >= 1 && v <= 7) notas[k] = Math.round(v * 10) / 10;
+    }
+  }
+  return { aprobados, cursando, notas };
+}
+
+function getState() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (raw) return normalizar(JSON.parse(raw));
+    const old = localStorage.getItem(LS_OLD); // migración desde la versión anterior
+    if (old) return normalizar({ aprobados: JSON.parse(old) });
+  } catch (e) {}
+  return estadoVacio();
+}
+
+function saveState(s) {
+  s = normalizar(s);
+  try { localStorage.setItem(LS_KEY, JSON.stringify(s)); } catch (e) {}
+  if (window.guardarNube) window.guardarNube(s);
+}
+
+// Puente con el módulo de Firebase
+window.PEM = {
+  getState,
+  aplicarNube(data) {
+    const s = normalizar(data);
+    const nuevo = JSON.stringify(s);
+    let actual = null;
+    try { actual = localStorage.getItem(LS_KEY); } catch (e) {}
+    if (actual === nuevo) return;
+    try { localStorage.setItem(LS_KEY, nuevo); } catch (e) {}
+    if (allRamosData.length) loadProgress();
+  }
+};
+
+// ---------- Utilidades ----------
+const prereqsDe = (item) => item.prer ? item.prer.split(',').map(s => s.trim()).filter(Boolean) : [];
+const semDe = (item) => item.cls.slice(1);
+const normTxt = (t) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+function estadoRamo(item, s) {
+  if (s.aprobados.includes(item.nombre)) return 'aprobado';
+  if (prereqsDe(item).some(p => !s.aprobados.includes(p))) return 'bloqueado';
+  return s.cursando.includes(item.nombre) ? 'cursando' : 'disponible';
+}
+
+function descendientes(nombre) {
+  const out = new Set();
+  const pila = [nombre];
+  while (pila.length) {
+    const cur = pila.pop();
+    allRamosData.forEach(r => {
+      if (prereqsDe(r).includes(cur) && !out.has(r.nombre)) { out.add(r.nombre); pila.push(r.nombre); }
+    });
+  }
+  return [...out];
+}
+
+function parseNota(str) {
+  str = (str || '').trim().replace(',', '.');
+  if (str === '') return null;
+  const v = Number(str);
+  if (!isFinite(v) || v < 1 || v > 7) return NaN;
+  return Math.round(v * 10) / 10;
+}
+const fmtNota = (v) => v.toFixed(1).replace('.', ',');
+
+// ---------- Inicio ----------
 function init() {
   allRamosData = JSON.parse(document.getElementById('dataRamos').textContent);
+  allRamosData.forEach(r => { byName[r.nombre] = r; });
   renderGrid();
+  drawLines();
   loadProgress();
-  
-  // Event Listeners
-  window.addEventListener('resize', drawLines);
-  searchInput.addEventListener('input', handleSearch);
-  
-  // Dark Mode Toggle
+  syncDarkIcon();
+
+  let rz;
+  window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { drawLines(); updateLineStates(getState()); }, 120); });
+  searchInput.addEventListener('input', applyFilters);
+
+  document.getElementById('filterBtn').addEventListener('click', (e) => {
+    soloDisponibles = !soloDisponibles;
+    e.currentTarget.classList.toggle('active', soloDisponibles);
+    e.currentTarget.setAttribute('aria-pressed', String(soloDisponibles));
+    applyFilters();
+  });
+
   document.getElementById('darkModeBtn').addEventListener('click', () => {
-    document.body.classList.toggle('dark-mode');
-    drawLines(); // Redibujar líneas por si cambian colores
+    const on = document.body.classList.toggle('dark-mode');
+    try { localStorage.setItem(LS_DARK, on ? '1' : '0'); } catch (e) {}
+    syncDarkIcon();
   });
 
-  // Reset
-  document.getElementById('resetBtn').addEventListener('click', () => {
-    if(confirm('¿Borrar todo el progreso?')) {
-      localStorage.removeItem(LS_KEY);
-      const fin = () => location.reload();
-      if (window.borrarNube) window.borrarNube().then(fin, fin); else fin();
-    }
+  document.getElementById('resetBtn').addEventListener('click', async () => {
+    if (!confirm('¿Borrar todo el progreso (aprobados, cursando y notas)? Si tienes la sesión iniciada, también se borra de la nube.')) return;
+    try { localStorage.removeItem(LS_KEY); localStorage.removeItem(LS_OLD); } catch (e) {}
+    if (window.borrarNube) { try { await window.borrarNube(); } catch (e) {} }
+    location.reload();
   });
 
-  // Exportar Imagen
-  document.getElementById('exportBtn').addEventListener('click', () => {
-    const el = document.getElementById('canvasWrap');
-    html2canvas(el).then(canvas => {
-      const link = document.createElement('a');
-      link.download = 'mi_malla.png';
-      link.href = canvas.toDataURL();
-      link.click();
-    });
-  });
+  document.getElementById('exportBtn').addEventListener('click', exportarImagen);
 
-  // Modal
   document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
   document.getElementById('modalBack').addEventListener('click', (e) => {
-    if(e.target === document.getElementById('modalBack')) closeModal();
+    if (e.target === document.getElementById('modalBack')) closeModal();
   });
-  document.getElementById('modalActionBtn').addEventListener('click', toggleStatus);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+  document.getElementById('modalActionBtn').addEventListener('click', toggleAprobado);
+  document.getElementById('modalCursandoBtn').addEventListener('click', toggleCursando);
+  document.getElementById('notaInput').addEventListener('change', guardarNotaInput);
+  document.getElementById('notaInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') e.target.blur(); });
+
+  if (window.ResizeObserver) new ResizeObserver(() => { drawLines(); updateLineStates(getState()); }).observe(document.getElementById('inner'));
+}
+
+function syncDarkIcon() {
+  const on = document.body.classList.contains('dark-mode');
+  document.querySelector('#darkModeBtn i').className = on ? 'fas fa-sun' : 'fas fa-moon';
 }
 
 function renderGrid() {
   const template = document.getElementById('ramoTemplate');
-  gridArea.innerHTML = ''; // Limpiar
-  
+  gridArea.innerHTML = '';
+  let ultimo = null;
+
   allRamosData.forEach(item => {
-    const clone = template.content.cloneNode(true);
-    const node = clone.querySelector('.ramo');
-    
-    // Asignar datos
+    if (item.cls !== ultimo) {
+      const h = document.createElement('div');
+      h.className = 'sem-header';
+      h.textContent = 'Semestre ' + semDe(item);
+      gridArea.appendChild(h);
+      ultimo = item.cls;
+    }
+
+    const node = template.content.cloneNode(true).querySelector('.ramo');
     node.dataset.nombre = item.nombre;
-    node.dataset.prer = item.prer;
-    node.dataset.creditos = item.creditos;
-    node.dataset.desc = item.desc;
     node.classList.add(item.cls);
-    
-    // Posición Grid
     node.style.gridColumnStart = item.col;
     node.style.gridRowStart = item.row;
-    
-    // Contenido
-    node.querySelector('.titulo').innerText = item.nombre;
-    node.querySelector('.creditos').innerText = item.creditos + ' cr';
-    node.querySelector('.semestre-num').innerText = item.cls.replace('s',''); // Extraer numero semestre
-    
-    // Eventos
+    node.querySelector('.titulo').textContent = item.nombre;
+    node.querySelector('.creditos').textContent = item.creditos + ' cr';
+    node.querySelector('.semestre-num').textContent = semDe(item);
+
     node.addEventListener('click', () => openModal(node));
-    node.addEventListener('mouseenter', () => highlightPath(node, true));
-    node.addEventListener('mouseleave', () => highlightPath(node, false));
-    
+    node.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openModal(node); }
+    });
+    if (window.matchMedia('(hover: hover)').matches) {
+      node.addEventListener('mouseenter', () => highlightPath(node, true));
+      node.addEventListener('mouseleave', () => highlightPath(node, false));
+    }
     gridArea.appendChild(node);
   });
 }
 
-function getAprobados() {
-  return JSON.parse(localStorage.getItem(LS_KEY) || '[]');
+function loadProgress() {
+  const s = getState();
+  document.querySelectorAll('.ramo').forEach(node => {
+    const item = byName[node.dataset.nombre];
+    if (!item) return;
+    const est = estadoRamo(item, s);
+    node.classList.remove('aprobado', 'cursando', 'bloqueado');
+    node.querySelector('.lock-icon').style.display = 'none';
+    node.removeAttribute('title');
+
+    if (est === 'aprobado' || est === 'cursando') node.classList.add(est);
+    if (est === 'bloqueado') {
+      node.classList.add('bloqueado');
+      node.querySelector('.lock-icon').style.display = 'block';
+      node.title = 'Bloqueado: faltan ' + prereqsDe(item).filter(p => !s.aprobados.includes(p)).join(', ');
+    }
+    const nota = s.notas[item.nombre];
+    node.querySelector('.nota').textContent = (est === 'aprobado' && nota) ? fmtNota(nota) : '';
+    node.setAttribute('aria-label', `${item.nombre}, ${item.creditos} créditos, ${est}`);
+  });
+
+  updateStats(s);
+  updateLineStates(s);
+  applyFilters();
 }
 
-function loadProgress() {
-  const aprobados = getAprobados();
-  const ramosNodes = Array.from(document.querySelectorAll('.ramo'));
-  
-  ramosNodes.forEach(node => {
-    const nombre = node.dataset.nombre;
-    const prerequisitos = (node.dataset.prer || '').split(',').map(s=>s.trim()).filter(Boolean);
-    
-    // Reset classes
-    node.classList.remove('aprobado', 'bloqueado');
-    node.querySelector('.lock-icon').style.display = 'none';
+function updateStats(s) {
+  let totalCr = 0, aprobCr = 0, aprobN = 0, cursN = 0, cursCr = 0;
+  let sumPond = 0, crNota = 0, sumSimple = 0, nNotas = 0;
+  const porSem = {};
 
-    // 1. Está aprobado?
-    if (aprobados.includes(nombre)) {
-      node.classList.add('aprobado');
-    } else {
-      // 2. Si no, verificar si está bloqueado (prerrequisitos no cumplidos)
-      const allPrereqMet = prerequisitos.every(p => aprobados.includes(p));
-      if (!allPrereqMet) {
-        node.classList.add('bloqueado');
-        node.querySelector('.lock-icon').style.display = 'block';
-        node.title = "Bloqueado: faltan " + prerequisitos.filter(p => !aprobados.includes(p)).join(', ');
-      }
+  allRamosData.forEach(r => {
+    totalCr += r.creditos;
+    const sem = semDe(r);
+    porSem[sem] = porSem[sem] || { total: 0, aprob: 0, n: 0, nAprob: 0 };
+    porSem[sem].total += r.creditos;
+    porSem[sem].n++;
+    if (s.aprobados.includes(r.nombre)) {
+      aprobCr += r.creditos; aprobN++;
+      porSem[sem].aprob += r.creditos; porSem[sem].nAprob++;
+      const v = s.notas[r.nombre];
+      if (v) { sumPond += v * r.creditos; crNota += r.creditos; sumSimple += v; nNotas++; }
+    } else if (s.cursando.includes(r.nombre) && estadoRamo(r, s) === 'cursando') {
+      cursN++; cursCr += r.creditos;
     }
   });
 
-  updateStats(aprobados);
-  drawLines();
-}
+  const pct = Math.round((aprobCr / totalCr) * 100) || 0;
+  document.getElementById('statPorcentaje').textContent = pct + '%';
+  document.getElementById('barPorcentaje').style.width = pct + '%';
+  document.getElementById('statCreditos').textContent = `${aprobCr} / ${totalCr}`;
+  document.getElementById('statRamos').textContent = `${aprobN} / ${allRamosData.length}`;
+  document.getElementById('statCursando').textContent = cursN;
+  document.getElementById('statCursandoSub').textContent = `${cursCr} créditos`;
 
-function updateStats(aprobados) {
-  let totalCreditos = 0;
-  let misCreditos = 0;
-  let totalRamos = allRamosData.length;
-  let misRamos = aprobados.length;
-  
-  allRamosData.forEach(r => {
-    totalCreditos += r.creditos;
-    if (aprobados.includes(r.nombre)) misCreditos += r.creditos;
+  if (nNotas) {
+    document.getElementById('statPromedio').textContent = fmtNota(sumPond / crNota);
+    document.getElementById('statPromedioSub').textContent = `Simple: ${fmtNota(sumSimple / nNotas)} · ${nNotas} ${nNotas === 1 ? 'nota' : 'notas'}`;
+  } else {
+    document.getElementById('statPromedio').textContent = '—';
+    document.getElementById('statPromedioSub').textContent = 'Agrega notas en cada ramo aprobado';
+  }
+
+  const cont = document.getElementById('semResumen');
+  cont.innerHTML = '';
+  Object.keys(porSem).sort((a, b) => a - b).forEach(sem => {
+    const d = porSem[sem];
+    const p = Math.round((d.aprob / d.total) * 100) || 0;
+    const chip = document.createElement('div');
+    chip.className = 'sem-chip' + (d.aprob === d.total ? ' done' : '');
+    chip.innerHTML = '<div class="sem-t"></div><div class="sem-v"></div><div class="progress-bar"><div class="progress-fill"></div></div>';
+    chip.querySelector('.sem-t').textContent = 'Semestre ' + sem;
+    chip.querySelector('.sem-v').textContent = `${d.aprob} / ${d.total} cr · ${d.nAprob}/${d.n} ramos`;
+    chip.querySelector('.progress-fill').style.width = p + '%';
+    cont.appendChild(chip);
   });
-  
-  const porcentaje = Math.round((misCreditos / totalCreditos) * 100) || 0;
-  
-  document.getElementById('statPorcentaje').innerText = porcentaje + '%';
-  document.getElementById('barPorcentaje').style.width = porcentaje + '%';
-  document.getElementById('statCreditos').innerText = `${misCreditos} / ${totalCreditos}`;
-  document.getElementById('statRamos').innerText = `${misRamos} / ${totalRamos}`;
 }
 
-// -----------------------------------------------------
-// Lógica Gráfica (SVG Lines)
-// -----------------------------------------------------
+// ---------- Líneas de prerrequisitos (SVG) ----------
 function drawLines() {
-  svg.innerHTML = ''; // Limpiar
-  const nodes = Array.from(document.querySelectorAll('.ramo'));
-  const isDark = document.body.classList.contains('dark-mode');
-  const baseColor = isDark ? '#475569' : '#cbd5e1'; // Gris claro por defecto
+  if (getComputedStyle(svg).display === 'none') { svg.innerHTML = ''; return; }
+  const inner = document.getElementById('inner');
+  const ir = inner.getBoundingClientRect();
+  const marker = (id) => `<marker id="${id}" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,0 L8,4 L0,8 z"/></marker>`;
+  svg.innerHTML = `<defs>${marker('arrow')}${marker('arrow-ok')}${marker('arrow-hl')}</defs>`;
 
-  // Definir marcador de flecha
-  const defs = document.createElementNS('http://www.w3.org/2000/svg','defs');
-  const marker = document.createElementNS('http://www.w3.org/2000/svg','marker');
-  marker.setAttribute('id','arrow');
-  marker.setAttribute('markerWidth','6');
-  marker.setAttribute('markerHeight','6');
-  marker.setAttribute('refX','6');
-  marker.setAttribute('refY','3');
-  marker.setAttribute('orient','auto');
-  const path = document.createElementNS('http://www.w3.org/2000/svg','path');
-  path.setAttribute('d','M0,0 L6,3 L0,6 z');
-  path.setAttribute('fill', baseColor);
-  marker.appendChild(path);
-  defs.appendChild(marker);
-  svg.appendChild(defs);
+  const nodes = Array.from(document.querySelectorAll('.ramo'));
+  const porNombre = {};
+  nodes.forEach(n => { porNombre[n.dataset.nombre] = n; });
 
   nodes.forEach(dest => {
-    const prereq = (dest.dataset.prer || '').split(',').map(s=>s.trim()).filter(Boolean);
-    prereq.forEach(originName => {
-      const origin = nodes.find(n => n.dataset.nombre === originName);
-      if(origin) {
-        drawLine(origin, dest, baseColor);
-      }
+    const item = byName[dest.dataset.nombre];
+    prereqsDe(item).forEach(origen => {
+      const o = porNombre[origen];
+      if (!o) return;
+      const r1 = o.getBoundingClientRect();
+      const r2 = dest.getBoundingClientRect();
+      const x1 = r1.left + r1.width / 2 - ir.left;
+      const y1 = r1.bottom - ir.top;
+      const x2 = r2.left + r2.width / 2 - ir.left;
+      const y2 = r2.top - ir.top - 1;
+      const k = Math.max(30, (y2 - y1) / 2);
+      const path = document.createElementNS(SVGNS, 'path');
+      path.setAttribute('d', `M ${x1} ${y1} C ${x1} ${y1 + k} ${x2} ${y2 - k} ${x2} ${y2}`);
+      path.setAttribute('class', 'line');
+      path.dataset.from = origen;
+      path.dataset.to = dest.dataset.nombre;
+      svg.appendChild(path);
     });
   });
 }
 
-function drawLine(n1, n2, color, isHighlight=false) {
-  const r1 = n1.getBoundingClientRect();
-  const r2 = n2.getBoundingClientRect();
-  const cRect = document.getElementById('canvasWrap').getBoundingClientRect();
-  
-  // Calcular centros relativos al canvas
-  const p1 = { x: r1.left + r1.width/2 - cRect.left, y: r1.top + r1.height/2 - cRect.top };
-  const p2 = { x: r2.left + r2.width/2 - cRect.left, y: r2.top + r2.height/2 - cRect.top };
-
-  // Curvas Bezier
-  const dist = p2.x - p1.x;
-  const c1 = { x: p1.x + dist/2, y: p1.y };
-  const c2 = { x: p2.x - dist/2, y: p2.y };
-const path = document.createElementNS('http://www.w3.org/2000/svg','path');
-  const d = `M ${p1.x} ${p1.y} C ${c1.x} ${c1.y} ${c2.x} ${c2.y} ${p2.x} ${p2.y}`;
-  
-  path.setAttribute('d', d);
-  path.setAttribute('stroke', isHighlight ? '#3b82f6' : color);
-  path.setAttribute('stroke-width', isHighlight ? '3' : '2');
-  path.setAttribute('fill', 'none');
-  if(!isHighlight) path.setAttribute('marker-end', 'url(#arrow)');
-  
-  // Agregar ID para identificar la línea luego (origen-destino)
-  path.dataset.from = n1.dataset.nombre;
-  path.dataset.to = n2.dataset.nombre;
-  
-  if(isHighlight) {
-    // Las líneas resaltadas van encima
-    svg.appendChild(path);
-  } else {
-    svg.insertBefore(path, svg.firstChild);
-  }
+function updateLineStates(s) {
+  svg.querySelectorAll('.line').forEach(p => p.classList.toggle('ok', s.aprobados.includes(p.dataset.from)));
 }
-
-// -----------------------------------------------------
-// Interacciones Avanzadas (Highlight, Search, Modal)
-// -----------------------------------------------------
 
 function highlightPath(node, active) {
-  // 1. Atenuar/Restaurar otros
-  const allNodes = document.querySelectorAll('.ramo');
-  const allPaths = svg.querySelectorAll('path');
-  
+  const nodes = document.querySelectorAll('.ramo');
+  const lines = svg.querySelectorAll('.line');
   if (!active) {
-    allNodes.forEach(n => n.classList.remove('dimmed'));
-    // Redibujar normal
-    drawLines(); 
+    nodes.forEach(n => n.classList.remove('hover-dim'));
+    lines.forEach(l => l.classList.remove('hl', 'dim'));
     return;
   }
-  
-  // Estamos en hover activo
-  allNodes.forEach(n => n.classList.add('dimmed'));
-  node.classList.remove('dimmed'); // El actual no se atenúa
-  
-  // Buscar padres (prerrequisitos) y hijos (quienes me requieren)
   const name = node.dataset.nombre;
-  
-  // Highlight Prerrequisitos (hacia atrás)
-  const prereqs = (node.dataset.prer||'').split(',').map(s=>s.trim());
-  prereqs.forEach(p => {
-    const parent = Array.from(allNodes).find(n=>n.dataset.nombre===p);
-    if(parent) {
-      parent.classList.remove('dimmed');
-      // Dibujar linea highlight P -> Node
-      drawLine(parent, node, null, true);
-    }
-  });
-
-  // Highlight Desbloqueados (hacia adelante)
-  allNodes.forEach(child => {
-    const childPrereqs = (child.dataset.prer||'').split(',').map(s=>s.trim());
-    if(childPrereqs.includes(name)) {
-      child.classList.remove('dimmed');
-      // Dibujar linea highlight Node -> Child
-      drawLine(node, child, null, true);
-    }
+  const relacionados = new Set([name, ...prereqsDe(byName[name])]);
+  allRamosData.forEach(r => { if (prereqsDe(r).includes(name)) relacionados.add(r.nombre); });
+  nodes.forEach(n => n.classList.toggle('hover-dim', !relacionados.has(n.dataset.nombre)));
+  lines.forEach(l => {
+    const rel = l.dataset.from === name || l.dataset.to === name;
+    l.classList.toggle('hl', rel);
+    l.classList.toggle('dim', !rel);
   });
 }
 
-function handleSearch(e) {
-  const term = e.target.value.toLowerCase();
-  const nodes = document.querySelectorAll('.ramo');
-  
-  nodes.forEach(n => {
-    const txt = n.dataset.nombre.toLowerCase();
-    if(txt.includes(term)) {
-      n.style.display = 'flex';
-      n.classList.remove('dimmed');
-    } else {
-      // Opción A: Ocultar (desordena el grid) -> n.style.display = 'none';
-      // Opción B: Atenuar mucho
-      if(term !== '') n.classList.add('dimmed');
-      else n.classList.remove('dimmed');
+// ---------- Búsqueda y filtro ----------
+function applyFilters() {
+  const term = normTxt(searchInput.value.trim());
+  const s = getState();
+  document.querySelectorAll('.ramo').forEach(n => {
+    const item = byName[n.dataset.nombre];
+    const okTxt = !term || normTxt(item.nombre).includes(term);
+    const est = estadoRamo(item, s);
+    const okDisp = !soloDisponibles || est === 'disponible' || est === 'cursando';
+    n.classList.toggle('dimmed', !(okTxt && okDisp));
+  });
+  document.querySelectorAll('.sem-header').forEach(h => {
+    let visible = false;
+    let el = h.nextElementSibling;
+    while (el && !el.classList.contains('sem-header')) {
+      if (!el.classList.contains('dimmed')) visible = true;
+      el = el.nextElementSibling;
     }
+    h.classList.toggle('empty', !visible);
   });
 }
 
+// ---------- Ventana de detalle ----------
 function openModal(node) {
   activeRamo = node;
-  const isBlocked = node.classList.contains('bloqueado');
-  const isApproved = node.classList.contains('aprobado');
-  
-  document.getElementById('modalTitle').innerText = node.dataset.nombre;
-  document.getElementById('modalDesc').innerText = node.dataset.desc;
-  
-  const btn = document.getElementById('modalActionBtn');
-  
-  if (isBlocked) {
-    btn.disabled = true;
-    btn.innerText = "Bloqueado (Faltan prerrequisitos)";
-    btn.style.background = "#ccc";
+  const item = byName[node.dataset.nombre];
+  const s = getState();
+  const est = estadoRamo(item, s);
+
+  document.getElementById('modalTitle').textContent = item.nombre;
+  document.getElementById('modalMeta').textContent = `${item.creditos} créditos · Semestre ${semDe(item)}`;
+  document.getElementById('modalDesc').textContent = item.desc;
+
+  const chips = document.getElementById('modalPrereq');
+  chips.innerHTML = '';
+  const pr = prereqsDe(item);
+  if (!pr.length) {
+    const c = document.createElement('span'); c.className = 'chip'; c.textContent = 'Ninguno'; chips.appendChild(c);
   } else {
-    btn.disabled = false;
-    if (isApproved) {
-      btn.innerText = "Desmarcar como Aprobado";
-      btn.className = "btn"; // estilo secundario
-      btn.style.background = "";
-    } else {
-      btn.innerText = "Aprobar Ramo";
-      btn.className = "btn btn-primary";
-    }
+    pr.forEach(p => {
+      const ok = s.aprobados.includes(p);
+      const c = document.createElement('span');
+      c.className = 'chip ' + (ok ? 'ok' : 'no');
+      c.textContent = (ok ? '✔ ' : '✖ ') + p;
+      chips.appendChild(c);
+    });
   }
-  
+
+  const notaRow = document.getElementById('notaRow');
+  const notaInput = document.getElementById('notaInput');
+  notaRow.style.display = est === 'bloqueado' ? 'none' : 'flex';
+  notaInput.value = s.notas[item.nombre] ? fmtNota(s.notas[item.nombre]) : '';
+  notaInput.classList.remove('invalid');
+  document.getElementById('notaMsg').textContent = est === 'aprobado' ? 'Se guarda al salir del campo' : 'Se guarda al aprobar el ramo';
+
+  const act = document.getElementById('modalActionBtn');
+  const cur = document.getElementById('modalCursandoBtn');
+  if (est === 'bloqueado') {
+    act.disabled = true; act.className = 'btn';
+    act.textContent = 'Bloqueado (faltan prerrequisitos)';
+    cur.style.display = 'none';
+  } else if (est === 'aprobado') {
+    act.disabled = false; act.className = 'btn';
+    act.textContent = 'Desmarcar como aprobado';
+    cur.style.display = 'none';
+  } else {
+    act.disabled = false; act.className = 'btn btn-primary';
+    act.textContent = 'Aprobar ramo';
+    cur.style.display = '';
+    cur.textContent = est === 'cursando' ? 'Quitar de cursando' : 'Marcar como cursando';
+  }
+
   document.getElementById('modalBack').style.display = 'flex';
+  document.getElementById('modalCloseBtn').focus();
 }
 
 function closeModal() {
@@ -728,37 +1250,97 @@ function closeModal() {
   activeRamo = null;
 }
 
-function toggleStatus() {
+function toggleAprobado() {
   if (!activeRamo) return;
   const nombre = activeRamo.dataset.nombre;
-  let aprobados = getAprobados();
-  
-  if (aprobados.includes(nombre)) {
-    // Quitar, pero verificar dependencias
-    // (Si quito Cálculo I, Cálculo II debería quedar bloqueado/advertencia? 
-    // Por simplicidad, permitimos quitar, el sistema recalculará bloqueos visuales)
-    aprobados = aprobados.filter(x => x !== nombre);
+  const s = getState();
+
+  if (s.aprobados.includes(nombre)) {
+    // Desmarcar: también se desmarcan los ramos que dependen de este
+    const afectados = descendientes(nombre).filter(d => s.aprobados.includes(d) || s.cursando.includes(d));
+    if (afectados.length) {
+      const msg = `Si desmarcas "${nombre}", también se desmarcarán ${afectados.length} ramo(s) que dependen de él:\n\n• ${afectados.join('\n• ')}\n\n¿Continuar?`;
+      if (!confirm(msg)) return;
+    }
+    const quitar = new Set([nombre, ...afectados]);
+    s.aprobados = s.aprobados.filter(x => !quitar.has(x));
+    s.cursando = s.cursando.filter(x => !quitar.has(x));
   } else {
-    aprobados.push(nombre);
+    const nota = parseNota(document.getElementById('notaInput').value);
+    if (Number.isNaN(nota)) {
+      document.getElementById('notaInput').classList.add('invalid');
+      document.getElementById('notaMsg').textContent = 'Ingresa una nota entre 1,0 y 7,0 o déjala vacía';
+      return;
+    }
+    s.aprobados.push(nombre);
+    s.cursando = s.cursando.filter(x => x !== nombre);
+    if (nota !== null) s.notas[nombre] = nota;
   }
-  
-  // Guardar (Local y Nube si existe)
-  if (window.guardarDatos) {
-    window.guardarDatos(aprobados);
-  } else {
-    localStorage.setItem(LS_KEY, JSON.stringify(aprobados));
-  }
-  
-  loadProgress(); // Recalcular todo
+  saveState(s);
+  loadProgress();
   closeModal();
 }
 
-// Permite que la sincronización en la nube refresque la malla sin recargar la página
-window.refrescarProgreso = () => { if (allRamosData.length) loadProgress(); };
+function toggleCursando() {
+  if (!activeRamo) return;
+  const nombre = activeRamo.dataset.nombre;
+  const s = getState();
+  if (s.cursando.includes(nombre)) s.cursando = s.cursando.filter(x => x !== nombre);
+  else s.cursando.push(nombre);
+  saveState(s);
+  loadProgress();
+  closeModal();
+}
 
-// Arrancar
-window.addEventListener('load', () => setTimeout(init, 100));
+function guardarNotaInput() {
+  if (!activeRamo) return;
+  const nombre = activeRamo.dataset.nombre;
+  const s = getState();
+  if (!s.aprobados.includes(nombre)) return; // si aún no está aprobado, se guarda al aprobar
+  const input = document.getElementById('notaInput');
+  const msg = document.getElementById('notaMsg');
+  const v = parseNota(input.value);
+  if (Number.isNaN(v)) {
+    input.classList.add('invalid');
+    msg.textContent = 'Ingresa una nota entre 1,0 y 7,0';
+    return;
+  }
+  input.classList.remove('invalid');
+  if (v === null) delete s.notas[nombre]; else s.notas[nombre] = v;
+  saveState(s);
+  loadProgress();
+  msg.textContent = v === null ? 'Nota borrada' : 'Nota guardada ✓';
+}
 
+// ---------- Exportar imagen ----------
+async function exportarImagen() {
+  const btn = document.getElementById('exportBtn');
+  if (typeof html2canvas === 'undefined') { alert('No se pudo cargar la herramienta de imagen. Revisa tu conexión.'); return; }
+  btn.disabled = true;
+  highlightPath(document.querySelector('.ramo'), false);
+  try {
+    const el = document.getElementById('inner');
+    const bg = getComputedStyle(document.body).getPropertyValue('--card-bg').trim() || '#ffffff';
+    const canvas = await html2canvas(el, { backgroundColor: bg, scale: window.innerWidth < 769 ? 1.5 : 2, useCORS: true });
+    const link = document.createElement('a');
+    link.download = 'mi_malla_pem_' + new Date().toISOString().slice(0, 10) + '.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  } catch (e) {
+    console.error(e);
+    alert('No se pudo generar la imagen.');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// ---------- Arranque ----------
+init();
+
+// App instalable y funcionamiento sin conexión (siempre prueba primero la versión más nueva)
+if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+}
 </script>
 </body>
 </html>
