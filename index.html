@@ -125,6 +125,7 @@
   .sw-cur { background: var(--card-bg); border: 2px dashed var(--warn); }
   .sw-ok { background: var(--card-bg); border: 2px solid var(--ok); }
   .sw-lock { background: var(--locked-bg); border: 2px dashed var(--border); }
+  .sw-plan { background: var(--card-bg); border: 2px dotted #8b5cf6; }
 
   details.sem-resumen { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); padding: 10px 15px; margin-bottom: 10px; }
   details.sem-resumen summary { cursor: pointer; font-weight: 600; font-size: 0.95rem; }
@@ -203,12 +204,14 @@
   .ramo.aprobado, .ramo.cursando { background: var(--card-bg) !important; color: var(--text); }
   .ramo.aprobado { border: 2px solid var(--ok); }
   .ramo.cursando { border: 2px dashed var(--warn); }
-  .ramo.aprobado::after, .ramo.cursando::after {
+  .ramo.aprobado::after, .ramo.cursando::after, .ramo.planificado::after {
     position: absolute; top: -10px; right: -10px; color: #fff; width: 24px; height: 24px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center; font-size: 12px;
   }
   .ramo.aprobado::after { content: "✔"; background: var(--ok); }
   .ramo.cursando::after { content: "\f017"; font-family: "Font Awesome 6 Free"; font-weight: 900; background: var(--warn); }
+  .ramo.planificado { background: var(--card-bg) !important; color: var(--text) !important; border: 2px dotted #8b5cf6; }
+  .ramo.planificado::after { content: "\f073"; font-family: "Font Awesome 6 Free"; font-weight: 900; background: #8b5cf6; }
 
   .ramo.bloqueado {
     background: var(--locked-bg) !important;
@@ -239,6 +242,30 @@
 
   footer { text-align: center; padding: 30px 20px 40px; color: #64748b; font-size: 0.9rem; }
 
+  /* Avisos */
+  .banner { max-width: 1400px; margin: 10px auto 0; padding: 0 20px; }
+  .banner[hidden] { display: none; }
+  .banner > div { background: color-mix(in srgb, var(--warn) 18%, var(--card-bg)); border: 1px solid var(--warn); border-radius: 12px; padding: 10px 14px; font-size: 0.9rem; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .banner.vista > div { background: color-mix(in srgb, var(--blue) 14%, var(--card-bg)); border-color: var(--blue); }
+
+  /* Planificador */
+  details.panel { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); padding: 10px 15px; margin-bottom: 10px; }
+  details.panel summary { cursor: pointer; font-weight: 600; font-size: 0.95rem; }
+  .panel-body { margin-top: 12px; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; }
+  .panel-body h4 { margin: 0 0 8px; font-size: 0.9rem; }
+  .field { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 0.85rem; margin-bottom: 8px; }
+  .field input[type="number"], .field input[type="date"] { width: 140px; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-family: inherit; }
+  body.dark-mode .field input { color-scheme: dark; }
+  .chip.btn-chip { cursor: pointer; background: transparent; color: var(--text); font-family: inherit; }
+  .chip.btn-chip:hover { background: var(--border); }
+  .chip.plan { border-color: #8b5cf6; color: #8b5cf6; }
+  .plan-total { font-size: 0.85rem; margin: 8px 0 4px; }
+  .plan-total.warn { color: #ef4444; font-weight: 600; }
+  .muted { opacity: 0.7; font-size: 0.8rem; }
+
+  /* Vista de solo lectura (enlace compartido) */
+  .modo-vista #resetBtn, .modo-vista #shareBtn, .modo-vista #planPanel, .modo-vista #cierreBanner { display: none !important; }
+
   /* Móvil: lista por semestres */
   @media (max-width: 768px) {
     header { padding: 10px 12px; gap: 8px; }
@@ -249,7 +276,6 @@
     .btn { padding: 8px 12px; }
     .dashboard { grid-template-columns: 1fr 1fr; padding: 0 12px; margin: 12px auto 6px; gap: 0.6rem; }
     .stat-card { padding: 10px; }
-    .stat-card:last-child { grid-column: 1 / -1; }
     .stat-val { font-size: 1.2rem; }
     .legend { font-size: 0.78rem; gap: 6px 12px; }
     .info-wrap { padding: 0 12px; }
@@ -271,7 +297,7 @@
   // ------------------------------------------------------------------
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-  import { getFirestore, doc, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import { getFirestore, doc, getDoc, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyDsgMpdpGcWdrYd3aR2OQgVCG46bVlKOoI",
@@ -287,6 +313,8 @@
   const db = getFirestore(app);
   let user = null;
   let unsub = null;
+  // Estado del enlace compartido; 'known' indica que ya se leyó desde la nube
+  let share = { id: null, notas: false, known: false };
 
   window.doLogin = async () => {
     try {
@@ -314,6 +342,63 @@
     btn.onclick = onclick;
   }
 
+  const primerNombre = () => ((user && user.displayName) || '').split(' ')[0] || 'Alguien';
+
+  function nuevoId() {
+    const a = new Uint8Array(16);
+    crypto.getRandomValues(a);
+    return btoa(String.fromCharCode(...a)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+
+  async function guardarNubeRaw(state) {
+    if (!user) return;
+    const data = {
+      aprobados: state.aprobados, cursando: state.cursando, plan: state.plan, notas: state.notas,
+      credSem: state.credSem, cierre: state.cierre, fecha: new Date()
+    };
+    if (share.known) { data.shareId = share.id || null; data.shareNotas = !!share.notas; }
+    // mergeFields reemplaza cada campo completo (así se pueden borrar notas) sin tocar los demás
+    await setDoc(doc(db, "avances", user.uid), data, { mergeFields: Object.keys(data) });
+    if (share.id) {
+      await setDoc(doc(db, "compartidos", share.id), {
+        uid: user.uid, nombre: primerNombre(),
+        aprobados: state.aprobados, cursando: state.cursando,
+        notas: share.notas ? state.notas : {}, compartirNotas: !!share.notas,
+        fecha: new Date()
+      });
+    }
+  }
+
+  window.guardarNube = async (state) => {
+    try { await guardarNubeRaw(state); } catch (e) { console.error("Error guardando en la nube", e); }
+  };
+
+  window.borrarNube = async () => {
+    if (!user) return;
+    if (unsub) { unsub(); unsub = null; }
+    const id = share.id;
+    share = { id: null, notas: false, known: true };
+    try { if (id) await deleteDoc(doc(db, "compartidos", id)); } catch (e) { console.error(e); }
+    try { await deleteDoc(doc(db, "avances", user.uid)); } catch (e) { console.error(e); }
+  };
+
+  window.compartir = {
+    estado: () => ({ logeado: !!user, id: share.id, notas: share.notas }),
+    url: (id) => location.origin + location.pathname + '?ver=' + id,
+    crear: async (notas) => {
+      if (!user) throw new Error('Inicia sesión primero');
+      share = { id: share.id || nuevoId(), notas: !!notas, known: true };
+      await guardarNubeRaw(window.PEM.getState());
+    },
+    detener: async () => {
+      if (!user) return;
+      const id = share.id;
+      share = { id: null, notas: false, known: true };
+      if (id) await deleteDoc(doc(db, "compartidos", id));
+      await guardarNubeRaw(window.PEM.getState());
+    }
+  };
+
   // Escucha la nube en vivo: un cambio en otro dispositivo aparece aquí al instante
   function escucharNube() {
     if (unsub) unsub();
@@ -321,11 +406,14 @@
     unsub = onSnapshot(ref, (snap) => {
       if (snap.metadata.hasPendingWrites) return;
       if (snap.exists()) {
-        window.PEM.aplicarNube(snap.data());
+        const d = snap.data();
+        share = { id: d.shareId || null, notas: !!d.shareNotas, known: true };
+        window.PEM.aplicarNube(d);
       } else {
+        share.known = true;
         const local = window.PEM.getState();
-        if (local.aprobados.length || local.cursando.length) {
-          setDoc(ref, { ...local, fecha: new Date() }).catch(console.error);
+        if (local.aprobados.length || local.cursando.length || local.plan.length) {
+          window.guardarNube(local);
         }
       }
     }, (e) => console.error("Error de sincronización", e));
@@ -339,24 +427,22 @@
       escucharNube();
     } else {
       if (unsub) { unsub(); unsub = null; }
+      share = { id: null, notas: false, known: false };
       pintarBoton('Acceder con Google', window.doLogin);
     }
   });
 
-  window.guardarNube = async (state) => {
-    if (!user) return;
-    try {
-      await setDoc(doc(db, "avances", user.uid), {
-        aprobados: state.aprobados, cursando: state.cursando, notas: state.notas, fecha: new Date()
-      });
-    } catch (e) { console.error("Error guardando en la nube", e); }
-  };
-
-  window.borrarNube = async () => {
-    if (!user) return;
-    if (unsub) { unsub(); unsub = null; }
-    try { await deleteDoc(doc(db, "avances", user.uid)); } catch (e) { console.error(e); }
-  };
+  // Enlace compartido (?ver=ID): se lee sin iniciar sesión y es solo lectura
+  const verId = new URLSearchParams(location.search).get('ver');
+  if (verId) {
+    if (!/^[A-Za-z0-9_-]{10,64}$/.test(verId)) {
+      window.PEM.vistaError();
+    } else {
+      getDoc(doc(db, "compartidos", verId))
+        .then((snap) => { if (snap.exists()) window.PEM.activarVista(snap.data()); else window.PEM.vistaError(); })
+        .catch((e) => { console.error(e); window.PEM.vistaError(); });
+    }
+  }
 </script>
 </head>
 
@@ -392,6 +478,10 @@
       <i class="fas fa-trash-alt"></i>
     </button>
 
+    <button class="btn" id="shareBtn" title="Compartir mi avance con un enlace de solo lectura">
+      <i class="fas fa-share-nodes"></i> <span class="lbl">Compartir</span>
+    </button>
+
     <button class="btn btn-primary" id="authBtn" onclick="window.doLogin && window.doLogin()">
       <i class="fab fa-google"></i> <span>Acceder con Google</span>
     </button>
@@ -422,6 +512,18 @@
     <div class="stat-val" id="statPromedio">—</div>
     <div class="stat-sub" id="statPromedioSub">Agrega notas en cada ramo aprobado</div>
   </div>
+  <div class="stat-card">
+    <div class="stat-label">Semestres que faltan</div>
+    <div class="stat-val" id="statFaltan">—</div>
+    <div class="stat-sub" id="statFaltanSub"></div>
+  </div>
+</div>
+
+<div class="banner vista" id="vistaBanner" hidden>
+  <div><i class="fas fa-eye"></i> <span id="vistaTxt"></span> <button class="btn" id="vistaVolver">Ver mi malla</button></div>
+</div>
+<div class="banner" id="cierreBanner" hidden>
+  <div><i class="fas fa-bell"></i> <span id="cierreTxt"></span></div>
 </div>
 
 <div class="info-wrap">
@@ -429,9 +531,34 @@
     <span><i class="sw sw-disp"></i> Disponible</span>
     <span><i class="sw sw-cur"></i> Cursando</span>
     <span><i class="sw sw-ok"></i> Aprobado</span>
+    <span><i class="sw sw-plan"></i> En mi plan</span>
     <span><i class="sw sw-lock"></i> Bloqueado (faltan prerrequisitos)</span>
     <span class="hint">Toca un ramo para ver detalles, marcarlo o poner nota.</span>
   </div>
+  <details class="panel" id="planPanel">
+    <summary>Planificador y ruta</summary>
+    <div class="panel-body">
+      <div>
+        <h4>Plan del próximo semestre</h4>
+        <div class="chips" id="planChips"></div>
+        <div class="plan-total" id="planTotal"></div>
+        <div class="muted" id="planProyeccion"></div>
+        <button class="btn" id="planVaciar" style="margin-top:8px">Vaciar plan</button>
+      </div>
+      <div>
+        <h4>Mi semestre</h4>
+        <div class="field"><label for="credSem">Créditos que tomo por semestre</label><input type="number" id="credSem" min="10" max="45" step="1"></div>
+        <div class="field"><label for="cierreInput">Cierre del semestre</label><input type="date" id="cierreInput"></div>
+        <button class="btn" id="icsBtn"><i class="fas fa-calendar-plus"></i> Agregar recordatorio al calendario</button>
+        <div class="muted" id="icsMsg" style="margin-top:6px"></div>
+      </div>
+      <div>
+        <h4>Ramos clave (los que más desbloquean)</h4>
+        <div class="chips" id="clavesChips"></div>
+        <div class="muted" style="margin-top:6px">Aprobarlos primero te abre más ramos después.</div>
+      </div>
+    </div>
+  </details>
   <details class="sem-resumen">
     <summary>Resumen por semestre</summary>
     <div class="sem-grid" id="semResumen"></div>
@@ -446,7 +573,7 @@
 </div>
 
 <footer>
-  Sistema de Malla Interactiva v3.0 <br>
+  Sistema de Malla Interactiva v4.0 <br>
   Inicia sesión con Google para guardar tu avance y verlo en cualquier dispositivo.
 </footer>
 
@@ -469,6 +596,7 @@
     <p id="modalDesc" style="margin:0">Descripción...</p>
     <div class="prereq-title">Prerrequisitos</div>
     <div class="chips" id="modalPrereq"></div>
+    <div class="muted" id="modalAviso" style="margin-top:8px"></div>
     <div class="nota-row" id="notaRow">
       <label for="notaInput">Nota (1,0 a 7,0)</label>
       <input type="text" id="notaInput" inputmode="decimal" placeholder="Ej: 5,5" autocomplete="off" />
@@ -478,8 +606,31 @@
     <div class="controls-group" style="justify-content: flex-end;">
       <button class="btn" id="modalCloseBtn">Cerrar</button>
       <button class="btn" id="modalCursandoBtn">Marcar como cursando</button>
+      <button class="btn" id="modalPlanBtn">Agregar al plan</button>
       <button class="btn btn-primary" id="modalActionBtn">Aprobar ramo</button>
     </div>
+  </div>
+</div>
+
+<div class="modal-back" id="shareBack" role="dialog" aria-modal="true" aria-labelledby="shareTitle">
+  <div class="modal">
+    <h3 id="shareTitle">Compartir mi avance</h3>
+    <p class="muted" style="font-size:0.85rem; margin-top:0">Crea un enlace de solo lectura. Quien lo tenga verá tus ramos aprobados y cursando, pero no podrá cambiar nada. Puedes dejar de compartir cuando quieras.</p>
+    <div id="shareNoLogin" style="display:none">
+      <p id="shareNoLoginTxt">Inicia sesión con Google para crear un enlace.</p>
+      <button class="btn btn-primary" id="shareLoginBtn"><i class="fab fa-google"></i> Acceder con Google</button>
+    </div>
+    <div id="shareLogin" style="display:none">
+      <label class="field"><input type="checkbox" id="shareNotas"> Incluir mis notas y promedio</label>
+      <div class="field" id="shareLinkRow" style="display:none"><input type="text" id="shareLink" readonly style="width:100%"><button class="btn" id="shareCopy">Copiar enlace</button></div>
+      <div class="controls-group">
+        <button class="btn btn-primary" id="shareCrear">Crear enlace</button>
+        <button class="btn" id="shareStop" style="display:none">Dejar de compartir</button>
+      </div>
+      <div class="muted" id="shareMsg" style="margin-top:8px"></div>
+    </div>
+    <hr style="border:0; border-top:1px solid var(--border); margin:15px 0;">
+    <div class="controls-group" style="justify-content: flex-end;"><button class="btn" id="shareClose">Cerrar</button></div>
   </div>
 </div>
 
@@ -863,17 +1014,22 @@ const SVGNS = 'http://www.w3.org/2000/svg';
 
 let allRamosData = [];
 const byName = {};
+const descCount = {};
+const nodeByName = {};
 let activeRamo = null;
 let soloDisponibles = false;
 
-// ---------- Estado (aprobados, cursando, notas) ----------
-function estadoVacio() { return { aprobados: [], cursando: [], notas: {} }; }
+// ---------- Estado (aprobados, cursando, plan, notas, ajustes) ----------
+let vista = null;   // estado de solo lectura cuando se abre un enlace compartido
+const verId = new URLSearchParams(location.search).get('ver');
+if (verId) vista = { aprobados: [], cursando: [], plan: [], notas: {}, credSem: 28, cierre: '' };
 
 function normalizar(d) {
   d = d || {};
   const lista = (x) => Array.isArray(x) ? x.filter(v => typeof v === 'string') : [];
   const aprobados = lista(d.aprobados);
   const cursando = lista(d.cursando).filter(n => !aprobados.includes(n));
+  const plan = lista(d.plan).filter(n => !aprobados.includes(n) && !cursando.includes(n));
   const notas = {};
   if (d.notas && typeof d.notas === 'object') {
     for (const k in d.notas) {
@@ -881,10 +1037,16 @@ function normalizar(d) {
       if (isFinite(v) && v >= 1 && v <= 7) notas[k] = Math.round(v * 10) / 10;
     }
   }
-  return { aprobados, cursando, notas };
+  let credSem = Number(d.credSem);
+  if (!isFinite(credSem) || credSem < 10 || credSem > 45) credSem = 28;
+  credSem = Math.round(credSem);
+  const cierre = (typeof d.cierre === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d.cierre)) ? d.cierre : '';
+  return { aprobados, cursando, plan, notas, credSem, cierre };
 }
 
-function getState() {
+function estadoVacio() { return normalizar({}); }
+
+function getLocalState() {
   try {
     const raw = localStorage.getItem(LS_KEY);
     if (raw) return normalizar(JSON.parse(raw));
@@ -894,7 +1056,11 @@ function getState() {
   return estadoVacio();
 }
 
+// En un enlace compartido se muestra el estado ajeno, nunca el propio
+function getState() { return vista || getLocalState(); }
+
 function saveState(s) {
+  if (vista) return;
   s = normalizar(s);
   try { localStorage.setItem(LS_KEY, JSON.stringify(s)); } catch (e) {}
   if (window.guardarNube) window.guardarNube(s);
@@ -902,7 +1068,7 @@ function saveState(s) {
 
 // Puente con el módulo de Firebase
 window.PEM = {
-  getState,
+  getState: getLocalState,
   aplicarNube(data) {
     const s = normalizar(data);
     const nuevo = JSON.stringify(s);
@@ -911,6 +1077,21 @@ window.PEM = {
     if (actual === nuevo) return;
     try { localStorage.setItem(LS_KEY, nuevo); } catch (e) {}
     if (allRamosData.length) loadProgress();
+  },
+  activarVista(data) {
+    const s = normalizar(data);
+    if (!data.compartirNotas) s.notas = {};
+    vista = s;
+    document.body.classList.add('modo-vista');
+    const nombre = typeof data.nombre === 'string' && data.nombre ? data.nombre.slice(0, 40) : 'alguien';
+    document.getElementById('vistaTxt').textContent = 'Vista de solo lectura · malla de ' + nombre;
+    document.getElementById('vistaBanner').hidden = false;
+    if (allRamosData.length) loadProgress();
+  },
+  vistaError() {
+    document.body.classList.add('modo-vista');
+    document.getElementById('vistaTxt').textContent = 'Este enlace no existe o fue desactivado.';
+    document.getElementById('vistaBanner').hidden = false;
   }
 };
 
@@ -950,6 +1131,12 @@ const fmtNota = (v) => v.toFixed(1).replace('.', ',');
 function init() {
   allRamosData = JSON.parse(document.getElementById('dataRamos').textContent);
   allRamosData.forEach(r => { byName[r.nombre] = r; });
+  allRamosData.forEach(r => { descCount[r.nombre] = descendientes(r.nombre).length; });
+  if (verId) {
+    document.body.classList.add('modo-vista');
+    document.getElementById('vistaTxt').textContent = 'Cargando malla compartida…';
+    document.getElementById('vistaBanner').hidden = false;
+  }
   renderGrid();
   drawLines();
   loadProgress();
@@ -985,11 +1172,26 @@ function init() {
   document.getElementById('modalBack').addEventListener('click', (e) => {
     if (e.target === document.getElementById('modalBack')) closeModal();
   });
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeModal(); cerrarCompartir(); } });
   document.getElementById('modalActionBtn').addEventListener('click', toggleAprobado);
   document.getElementById('modalCursandoBtn').addEventListener('click', toggleCursando);
   document.getElementById('notaInput').addEventListener('change', guardarNotaInput);
   document.getElementById('notaInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') e.target.blur(); });
+
+  document.getElementById('modalPlanBtn').addEventListener('click', togglePlan);
+  document.getElementById('planVaciar').addEventListener('click', vaciarPlan);
+  document.getElementById('credSem').addEventListener('change', guardarAjustes);
+  document.getElementById('cierreInput').addEventListener('change', guardarAjustes);
+  document.getElementById('icsBtn').addEventListener('click', descargarICS);
+  document.getElementById('vistaVolver').addEventListener('click', () => { location.href = location.pathname; });
+
+  document.getElementById('shareBtn').addEventListener('click', abrirCompartir);
+  document.getElementById('shareClose').addEventListener('click', cerrarCompartir);
+  document.getElementById('shareBack').addEventListener('click', (e) => { if (e.target.id === 'shareBack') cerrarCompartir(); });
+  document.getElementById('shareCrear').addEventListener('click', crearEnlace);
+  document.getElementById('shareStop').addEventListener('click', detenerEnlace);
+  document.getElementById('shareCopy').addEventListener('click', copiarEnlace);
+  document.getElementById('shareLoginBtn').addEventListener('click', () => { cerrarCompartir(); if (window.doLogin) window.doLogin(); });
 
   if (window.ResizeObserver) new ResizeObserver(() => { drawLines(); updateLineStates(getState()); }).observe(document.getElementById('inner'));
 }
@@ -1015,6 +1217,7 @@ function renderGrid() {
 
     const node = template.content.cloneNode(true).querySelector('.ramo');
     node.dataset.nombre = item.nombre;
+    nodeByName[item.nombre] = node;
     node.classList.add(item.cls);
     node.style.gridColumnStart = item.col;
     node.style.gridRowStart = item.row;
@@ -1040,22 +1243,27 @@ function loadProgress() {
     const item = byName[node.dataset.nombre];
     if (!item) return;
     const est = estadoRamo(item, s);
-    node.classList.remove('aprobado', 'cursando', 'bloqueado');
+    const plan = est !== 'aprobado' && est !== 'cursando' && enPlan(item, s);
+    node.classList.remove('aprobado', 'cursando', 'bloqueado', 'planificado');
     node.querySelector('.lock-icon').style.display = 'none';
     node.removeAttribute('title');
 
     if (est === 'aprobado' || est === 'cursando') node.classList.add(est);
-    if (est === 'bloqueado') {
+    else if (plan) { node.classList.add('planificado'); node.title = 'En tu plan del próximo semestre'; }
+    else if (est === 'bloqueado') {
       node.classList.add('bloqueado');
       node.querySelector('.lock-icon').style.display = 'block';
       node.title = 'Bloqueado: faltan ' + prereqsDe(item).filter(p => !s.aprobados.includes(p)).join(', ');
     }
     const nota = s.notas[item.nombre];
     node.querySelector('.nota').textContent = (est === 'aprobado' && nota) ? fmtNota(nota) : '';
-    node.setAttribute('aria-label', `${item.nombre}, ${item.creditos} créditos, ${est}`);
+    node.setAttribute('aria-label', `${item.nombre}, ${item.creditos} créditos, ${plan ? 'en el plan' : est}`);
   });
 
   updateStats(s);
+  renderFaltan(s);
+  renderPlanner(s);
+  renderCierre(s);
   updateLineStates(s);
   applyFilters();
 }
@@ -1197,9 +1405,11 @@ function openModal(node) {
   const item = byName[node.dataset.nombre];
   const s = getState();
   const est = estadoRamo(item, s);
+  const nDesb = descCount[item.nombre] || 0;
 
   document.getElementById('modalTitle').textContent = item.nombre;
-  document.getElementById('modalMeta').textContent = `${item.creditos} créditos · Semestre ${semDe(item)}`;
+  document.getElementById('modalMeta').textContent = `${item.creditos} créditos · Semestre ${semDe(item)}` +
+    (nDesb ? ` · Desbloquea ${nDesb} ${nDesb === 1 ? 'ramo' : 'ramos'}` : '');
   document.getElementById('modalDesc').textContent = item.desc;
 
   const chips = document.getElementById('modalPrereq');
@@ -1217,28 +1427,52 @@ function openModal(node) {
     });
   }
 
+  const aviso = document.getElementById('modalAviso');
   const notaRow = document.getElementById('notaRow');
   const notaInput = document.getElementById('notaInput');
-  notaRow.style.display = est === 'bloqueado' ? 'none' : 'flex';
-  notaInput.value = s.notas[item.nombre] ? fmtNota(s.notas[item.nombre]) : '';
-  notaInput.classList.remove('invalid');
-  document.getElementById('notaMsg').textContent = est === 'aprobado' ? 'Se guarda al salir del campo' : 'Se guarda al aprobar el ramo';
-
   const act = document.getElementById('modalActionBtn');
   const cur = document.getElementById('modalCursandoBtn');
-  if (est === 'bloqueado') {
-    act.disabled = true; act.className = 'btn';
-    act.textContent = 'Bloqueado (faltan prerrequisitos)';
-    cur.style.display = 'none';
-  } else if (est === 'aprobado') {
-    act.disabled = false; act.className = 'btn';
-    act.textContent = 'Desmarcar como aprobado';
-    cur.style.display = 'none';
+  const plb = document.getElementById('modalPlanBtn');
+  aviso.textContent = '';
+
+  if (vista) {
+    // Enlace compartido: solo se puede mirar
+    notaRow.style.display = 'none';
+    act.style.display = 'none'; cur.style.display = 'none'; plb.style.display = 'none';
+    const nv = s.notas[item.nombre];
+    if (est === 'aprobado') aviso.textContent = 'Aprobado' + (nv ? ' · Nota: ' + fmtNota(nv) : '');
+    else if (est === 'cursando') aviso.textContent = 'Lo está cursando';
   } else {
-    act.disabled = false; act.className = 'btn btn-primary';
-    act.textContent = 'Aprobar ramo';
-    cur.style.display = '';
-    cur.textContent = est === 'cursando' ? 'Quitar de cursando' : 'Marcar como cursando';
+    const pl = planificable(item, s);
+    const inPlan = s.plan.includes(item.nombre);
+    notaRow.style.display = est === 'bloqueado' ? 'none' : 'flex';
+    notaInput.value = s.notas[item.nombre] ? fmtNota(s.notas[item.nombre]) : '';
+    notaInput.classList.remove('invalid');
+    document.getElementById('notaMsg').textContent = est === 'aprobado' ? 'Se guarda al salir del campo' : 'Se guarda al aprobar el ramo';
+
+    act.style.display = '';
+    plb.textContent = inPlan ? 'Quitar del plan' : 'Agregar al plan';
+    if (est === 'bloqueado') {
+      act.disabled = true; act.className = 'btn';
+      act.textContent = 'Bloqueado (faltan prerrequisitos)';
+      cur.style.display = 'none';
+      plb.style.display = (pl || inPlan) ? '' : 'none';
+      if (pl) aviso.textContent = 'Podrás cursarlo cuando termines los ramos que estás cursando. Mientras tanto puedes agregarlo a tu plan.';
+    } else if (est === 'aprobado') {
+      act.disabled = false; act.className = 'btn';
+      act.textContent = 'Desmarcar como aprobado';
+      cur.style.display = 'none'; plb.style.display = 'none';
+    } else if (est === 'cursando') {
+      act.disabled = false; act.className = 'btn btn-primary';
+      act.textContent = 'Aprobar ramo';
+      cur.style.display = ''; cur.textContent = 'Quitar de cursando';
+      plb.style.display = 'none';
+    } else {
+      act.disabled = false; act.className = 'btn btn-primary';
+      act.textContent = 'Aprobar ramo';
+      cur.style.display = ''; cur.textContent = 'Marcar como cursando';
+      plb.style.display = '';
+    }
   }
 
   document.getElementById('modalBack').style.display = 'flex';
@@ -1310,6 +1544,271 @@ function guardarNotaInput() {
   saveState(s);
   loadProgress();
   msg.textContent = v === null ? 'Nota borrada' : 'Nota guardada ✓';
+}
+
+// ---------- Plan, semestres restantes, ramos clave ----------
+const proyectado = (s) => new Set([...s.aprobados, ...s.cursando]);
+
+// Se puede planificar un ramo si sus prerrequisitos están aprobados o se están cursando ahora
+function planificable(item, s) {
+  if (s.aprobados.includes(item.nombre) || s.cursando.includes(item.nombre)) return false;
+  const pj = proyectado(s);
+  return prereqsDe(item).every(p => pj.has(p));
+}
+const enPlan = (item, s) => s.plan.includes(item.nombre) && planificable(item, s);
+
+function semestresFaltan(s) {
+  const pend = allRamosData.filter(r => !s.aprobados.includes(r.nombre) && !s.cursando.includes(r.nombre));
+  if (!pend.length) return { n: 0, cred: 0, porCred: 0, porPrer: 0 };
+  const set = new Set(pend.map(r => r.nombre));
+  const memo = {};
+  const nivel = (r) => {
+    if (memo[r.nombre]) return memo[r.nombre];
+    let m = 0;
+    prereqsDe(r).forEach(p => { if (set.has(p)) m = Math.max(m, nivel(byName[p])); });
+    return (memo[r.nombre] = m + 1);
+  };
+  const porPrer = Math.max(...pend.map(nivel));
+  const cred = pend.reduce((a, r) => a + r.creditos, 0);
+  const porCred = Math.ceil(cred / s.credSem);
+  return { n: Math.max(porPrer, porCred), cred, porCred, porPrer };
+}
+
+function renderFaltan(s) {
+  const f = semestresFaltan(s);
+  const val = document.getElementById('statFaltan');
+  const sub = document.getElementById('statFaltanSub');
+  if (!f.cred) { val.textContent = '0'; sub.textContent = '¡Sin ramos pendientes!'; return; }
+  val.textContent = '~' + f.n;
+  sub.textContent = `${f.cred} cr por cursar${s.cursando.length ? ' (sin contar lo que cursas)' : ''} · mínimo ${f.porPrer} por prerrequisitos`;
+}
+
+function renderPlanner(s) {
+  if (vista) return;
+  const chips = document.getElementById('planChips');
+  chips.innerHTML = '';
+  let total = 0, validos = 0;
+  s.plan.forEach(n => {
+    const item = byName[n];
+    if (!item) return;
+    const ok = planificable(item, s);
+    const c = document.createElement('button');
+    c.type = 'button';
+    c.className = 'chip btn-chip ' + (ok ? 'plan' : 'no');
+    c.textContent = `${ok ? '' : '⚠ '}${n} · ${item.creditos} cr ✕`;
+    c.title = ok ? 'Quitar del plan' : 'Le faltan prerrequisitos y no cuenta en el total. Pulsa para quitarlo';
+    c.addEventListener('click', () => quitarDelPlan(n));
+    chips.appendChild(c);
+    if (ok) { total += item.creditos; validos++; }
+  });
+  if (!chips.children.length) {
+    const m = document.createElement('span');
+    m.className = 'muted';
+    m.textContent = 'Aún no hay ramos en el plan. Abre un ramo y pulsa «Agregar al plan».';
+    chips.appendChild(m);
+  }
+  const tot = document.getElementById('planTotal');
+  const alta = total > s.credSem * 1.15;
+  tot.textContent = validos ? `Carga: ${total} cr en ${validos} ${validos === 1 ? 'ramo' : 'ramos'} (tu meta: ${s.credSem} cr)${alta ? ' · carga alta' : ''}` : '';
+  tot.classList.toggle('warn', alta);
+
+  let cr = 0, totalCr = 0, hayCursando = false;
+  allRamosData.forEach(r => {
+    totalCr += r.creditos;
+    const est = estadoRamo(r, s);
+    if (est === 'cursando') hayCursando = true;
+    if (est === 'aprobado' || est === 'cursando' || enPlan(r, s)) cr += r.creditos;
+  });
+  document.getElementById('planProyeccion').textContent = (validos || hayCursando)
+    ? `Con lo que cursas y este plan llegarías a ${Math.round(cr / totalCr * 100)}% (${cr} de ${totalCr} cr).` : '';
+  document.getElementById('planVaciar').disabled = !s.plan.length;
+
+  const ci = document.getElementById('credSem');
+  const ce = document.getElementById('cierreInput');
+  if (document.activeElement !== ci) ci.value = s.credSem;
+  if (document.activeElement !== ce) ce.value = s.cierre;
+
+  const claves = allRamosData.filter(r => planificable(r, s))
+    .map(r => ({ r, n: descCount[r.nombre] || 0 })).filter(x => x.n > 0)
+    .sort((a, b) => b.n - a.n).slice(0, 5);
+  const cc = document.getElementById('clavesChips');
+  cc.innerHTML = '';
+  if (!claves.length) {
+    const m = document.createElement('span'); m.className = 'muted'; m.textContent = 'No hay ramos pendientes que desbloqueen otros.'; cc.appendChild(m);
+  }
+  claves.forEach(({ r, n }) => {
+    const c = document.createElement('button');
+    c.type = 'button';
+    c.className = 'chip btn-chip';
+    c.textContent = `${r.nombre} · desbloquea ${n}`;
+    c.addEventListener('click', () => openModal(nodeByName[r.nombre]));
+    cc.appendChild(c);
+  });
+}
+
+function togglePlan() {
+  if (!activeRamo || vista) return;
+  const nombre = activeRamo.dataset.nombre;
+  const s = getState();
+  const i = s.plan.indexOf(nombre);
+  if (i >= 0) s.plan.splice(i, 1); else s.plan.push(nombre);
+  saveState(s);
+  loadProgress();
+  closeModal();
+}
+
+function quitarDelPlan(nombre) {
+  const s = getState();
+  s.plan = s.plan.filter(x => x !== nombre);
+  saveState(s);
+  loadProgress();
+}
+
+function vaciarPlan() {
+  const s = getState();
+  s.plan = [];
+  saveState(s);
+  loadProgress();
+}
+
+function guardarAjustes() {
+  if (vista) return;
+  const s = getState();
+  s.credSem = Number(document.getElementById('credSem').value);
+  s.cierre = document.getElementById('cierreInput').value;
+  saveState(s);
+  loadProgress();
+}
+
+// ---------- Recordatorio de cierre de semestre ----------
+function renderCierre(s) {
+  const b = document.getElementById('cierreBanner');
+  const n = s.cursando.filter(x => byName[x] && estadoRamo(byName[x], s) === 'cursando').length;
+  if (vista || !s.cierre || !n) { b.hidden = true; return; }
+  const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+  const [y, m, d] = s.cierre.split('-').map(Number);
+  const dias = Math.round((new Date(y, m - 1, d) - hoy) / 86400000);
+  if (dias > 21) { b.hidden = true; return; }
+  let cuando;
+  if (dias > 1) cuando = `Faltan ${dias} días para el cierre del semestre.`;
+  else if (dias === 1) cuando = 'Mañana cierra el semestre.';
+  else if (dias === 0) cuando = 'Hoy cierra el semestre.';
+  else cuando = `El semestre cerró hace ${-dias} ${dias === -1 ? 'día' : 'días'}.`;
+  document.getElementById('cierreTxt').textContent =
+    `${cuando} Marca como aprobados tus ${n} ${n === 1 ? 'ramo' : 'ramos'} en curso y agrega sus notas.`;
+  b.hidden = false;
+}
+
+function descargarICS() {
+  const s = getState();
+  const msg = document.getElementById('icsMsg');
+  if (!s.cierre) { msg.textContent = 'Primero elige la fecha de cierre del semestre.'; return; }
+  const [y, m, d] = s.cierre.split('-').map(Number);
+  const pad = (n) => String(n).padStart(2, '0');
+  const fecha = (dt) => `${dt.getFullYear()}${pad(dt.getMonth() + 1)}${pad(dt.getDate())}`;
+  const ini = new Date(y, m - 1, d), fin = new Date(y, m - 1, d + 1);
+  const ahora = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '');
+  const url = location.origin + location.pathname;
+  const lineas = [
+    'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Malla PEM//ES', 'CALSCALE:GREGORIAN',
+    'BEGIN:VEVENT',
+    `UID:malla-cierre-${fecha(ini)}@${location.hostname || 'malla'}`,
+    `DTSTAMP:${ahora}`,
+    `DTSTART;VALUE=DATE:${fecha(ini)}`,
+    `DTEND;VALUE=DATE:${fecha(fin)}`,
+    'SUMMARY:Cierre de semestre: actualiza tu malla',
+    `DESCRIPTION:Marca como aprobados los ramos que cursaste y agrega tus notas en ${url}`,
+    'BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:Falta 1 semana para el cierre del semestre', 'TRIGGER:-P7D', 'END:VALARM',
+    'BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:Mañana cierra el semestre: actualiza tu malla', 'TRIGGER:-P1D', 'END:VALARM',
+    'END:VEVENT', 'END:VCALENDAR'
+  ];
+  const blob = new Blob([lineas.join('\r\n')], { type: 'text/calendar;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'cierre-semestre.ics';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  msg.textContent = 'Listo: abre el archivo descargado para agregarlo a tu calendario (avisa 7 días y 1 día antes).';
+}
+
+// ---------- Compartir (enlace de solo lectura) ----------
+function abrirCompartir() {
+  if (vista) return;
+  const c = window.compartir;
+  const noLogin = document.getElementById('shareNoLogin');
+  const login = document.getElementById('shareLogin');
+  document.getElementById('shareMsg').textContent = '';
+  noLogin.style.display = 'none';
+  login.style.display = 'none';
+  if (!c) {
+    document.getElementById('shareNoLoginTxt').textContent = 'Esta función necesita conexión a internet.';
+    document.getElementById('shareLoginBtn').style.display = 'none';
+    noLogin.style.display = 'block';
+  } else {
+    const e = c.estado();
+    if (!e.logeado) {
+      document.getElementById('shareNoLoginTxt').textContent = 'Inicia sesión con Google para crear un enlace.';
+      document.getElementById('shareLoginBtn').style.display = '';
+      noLogin.style.display = 'block';
+    } else {
+      login.style.display = 'block';
+      pintarEstadoEnlace(e);
+    }
+  }
+  document.getElementById('shareBack').style.display = 'flex';
+}
+
+function pintarEstadoEnlace(e) {
+  document.getElementById('shareNotas').checked = !!e.notas;
+  document.getElementById('shareLinkRow').style.display = e.id ? 'flex' : 'none';
+  document.getElementById('shareLink').value = e.id ? window.compartir.url(e.id) : '';
+  document.getElementById('shareCrear').textContent = e.id ? 'Actualizar opciones' : 'Crear enlace';
+  document.getElementById('shareStop').style.display = e.id ? '' : 'none';
+}
+
+function cerrarCompartir() {
+  const b = document.getElementById('shareBack');
+  if (b) b.style.display = 'none';
+}
+
+async function crearEnlace() {
+  const btn = document.getElementById('shareCrear');
+  const msg = document.getElementById('shareMsg');
+  btn.disabled = true;
+  msg.textContent = 'Creando enlace…';
+  try {
+    await window.compartir.crear(document.getElementById('shareNotas').checked);
+    pintarEstadoEnlace(window.compartir.estado());
+    msg.textContent = 'Listo. El enlace se mantiene al día cuando cambias tu avance.';
+  } catch (e) {
+    console.error(e);
+    msg.textContent = 'No se pudo crear el enlace: ' + (e && e.message ? e.message : 'error desconocido');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function detenerEnlace() {
+  if (!confirm('¿Dejar de compartir? El enlace actual dejará de funcionar.')) return;
+  const msg = document.getElementById('shareMsg');
+  try {
+    await window.compartir.detener();
+    pintarEstadoEnlace(window.compartir.estado());
+    msg.textContent = 'Dejaste de compartir. El enlace ya no funciona.';
+  } catch (e) {
+    console.error(e);
+    msg.textContent = 'No se pudo desactivar el enlace: ' + (e && e.message ? e.message : 'error desconocido');
+  }
+}
+
+async function copiarEnlace() {
+  const inp = document.getElementById('shareLink');
+  const msg = document.getElementById('shareMsg');
+  try { await navigator.clipboard.writeText(inp.value); }
+  catch (e) { inp.select(); document.execCommand('copy'); }
+  msg.textContent = 'Enlace copiado ✓';
 }
 
 // ---------- Exportar imagen ----------
