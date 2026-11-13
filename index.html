@@ -549,7 +549,8 @@
         <h4>Mi semestre</h4>
         <div class="field"><label for="credSem">Créditos que tomo por semestre</label><input type="number" id="credSem" min="10" max="45" step="1"></div>
         <div class="field"><label for="cierreInput">Cierre del semestre</label><input type="date" id="cierreInput"></div>
-        <button class="btn" id="icsBtn"><i class="fas fa-calendar-plus"></i> Agregar recordatorio al calendario</button>
+        <button class="btn" id="icsBtn"><i class="fas fa-calendar-plus"></i> Agregar a Google Calendar</button>
+        <button class="btn" id="icsDescBtn" title="Para Apple Calendar u otros"><i class="fas fa-download"></i> Descargar .ics</button>
         <div class="muted" id="icsMsg" style="margin-top:6px"></div>
       </div>
       <div>
@@ -1182,7 +1183,8 @@ function init() {
   document.getElementById('planVaciar').addEventListener('click', vaciarPlan);
   document.getElementById('credSem').addEventListener('change', guardarAjustes);
   document.getElementById('cierreInput').addEventListener('change', guardarAjustes);
-  document.getElementById('icsBtn').addEventListener('click', descargarICS);
+  document.getElementById('icsBtn').addEventListener('click', abrirGoogleCalendar);
+  document.getElementById('icsDescBtn').addEventListener('click', descargarICS);
   document.getElementById('vistaVolver').addEventListener('click', () => { location.href = location.pathname; });
 
   document.getElementById('shareBtn').addEventListener('click', abrirCompartir);
@@ -1697,6 +1699,23 @@ function renderCierre(s) {
   document.getElementById('cierreTxt').textContent =
     `${cuando} Marca como aprobados tus ${n} ${n === 1 ? 'ramo' : 'ramos'} en curso y agrega sus notas.`;
   b.hidden = false;
+}
+
+function abrirGoogleCalendar() {
+  const s = getState();
+  const msg = document.getElementById('icsMsg');
+  if (!s.cierre) { msg.textContent = 'Primero elige la fecha de cierre del semestre.'; return; }
+  const [y, m, d] = s.cierre.split('-').map(Number);
+  const pad = (n) => String(n).padStart(2, '0');
+  const f = (dt) => `${dt.getFullYear()}${pad(dt.getMonth() + 1)}${pad(dt.getDate())}`;
+  const q = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: 'Cierre de semestre: actualiza tu malla',
+    dates: `${f(new Date(y, m - 1, d))}/${f(new Date(y, m - 1, d + 1))}`,
+    details: `Marca como aprobados los ramos que cursaste y agrega tus notas en ${location.origin + location.pathname}`
+  });
+  window.open('https://calendar.google.com/calendar/render?' + q, '_blank', 'noopener');
+  msg.textContent = 'Se abrió Google Calendar: pulsa Guardar. Puedes agregar un aviso previo ahí mismo.';
 }
 
 function descargarICS() {
